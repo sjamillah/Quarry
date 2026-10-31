@@ -4,7 +4,7 @@
 <p align="center"><b>Every spreadsheet is a quarry.</b><br>
 Data profiling, a SQL engine, charts and machine learning, all running in your browser.</p>
 
-<p align="center"><a href="https://sjamillah.github.io/quarry/"><b>Live demo →</b></a></p>
+<p align="center"><a href="https://sjamillah.github.io/Quarry/"><b>Live demo →</b></a></p>
 
 ![Overview](screenshots/overview.png)
 
