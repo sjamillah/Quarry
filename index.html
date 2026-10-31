@@ -1,0 +1,1737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3C1518">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<title>Quarry</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Quarry turns any CSV into findings, SQL answers, charts and a trained prediction model, entirely in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a dark slate rail (brand, dataset, sections) beside one working column; on phones the rail becomes a top bar and a bottom tab bar. */
+:root{
+  /* Palette: Rich Mahogany #3C1518 (rail), Dark Garnet #69140E, Rust Brown #A44200 (accent), Bronze #D58936, Canary Yellow #FFF94F (highlight). */
+  --paper:#FBF7F3; --surface:#FFFFFF; --sunk:#F4ECE5; --ink:#2B1113; --ink-2:#5F4644; --ink-3:#957C76; --line:#EBDFD6;
+  --accent:#A44200; --accent-ink:#FFFFFF; --accent-soft:#FBE7D4; --hl:#FFF94F;
+  --rail:#3C1518; --rail-2:#52201F; --rail-ink:#FBEFE6; --rail-dim:#C9A196; --rail-hl:#FFF94F;
+  --pos:#2E7A58; --neg:#B3261E; --warn:#B8661A; --good-soft:#DDF0E5; --warn-soft:#FBEBD6; --neg-soft:#F9E0DC;
+  --t-num:#A44200; --t-cat:#8A5D00; --t-date:#2E7A58; --t-bool:#69140E; --t-text:#8C756F;
+  --c1:#A44200; --c2:#3D6B8A; --c3:#D58936; --c4:#69140E; --c5:#2E7A58; --c6:#8A6AAE;
+  --shadow:0 1px 2px rgb(60 21 24 / .05), 0 10px 26px -16px rgb(60 21 24 / .28);
+  --f-ui:'Bricolage Grotesque','Segoe UI',system-ui,-apple-system,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:14px;
+  --lg1:#FFF94F; --lg2:#D58936; --lg3:#A44200; --lg4:#69140E; --lg5:#3C1518; --lgA:#A44200; --lgB:#FFF94F; --hlp:88%;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#160A0B; --surface:#221112; --sunk:#2D1718; --ink:#F8ECE4; --ink-2:#D3B8AD; --ink-3:#9D8077; --line:#3D2325;
+  --accent:#E09449; --accent-ink:#1E0C0D; --accent-soft:#40220F; --hl:#FFF94F;
+  --rail:#0E0506; --rail-2:#22100F; --rail-ink:#F8ECE4; --rail-dim:#A88378; --rail-hl:#FFF94F;
+  --pos:#5DC293; --neg:#F07468; --warn:#EBA24D; --good-soft:#15362A; --warn-soft:#3B2711; --neg-soft:#40191A;
+  --t-num:#E09449; --t-cat:#F0CC5C; --t-date:#5DC293; --t-bool:#F08A7E; --t-text:#A8908A;
+  --c1:#E09449; --c2:#7DB2D8; --c3:#F2E35A; --c4:#F07468; --c5:#5DC293; --c6:#C3A3E8;
+  --shadow:0 1px 2px rgb(0 0 0 / .35), 0 12px 30px -16px rgb(0 0 0 / .75); --lg1:#FFF94F; --lg2:#E09449; --lg3:#C25A12; --lg4:#A44200; --lg5:#7E2410; --lgA:#E09449; --lgB:#FFF94F; --hlp:38%; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --paper:#160A0B; --surface:#221112; --sunk:#2D1718; --ink:#F8ECE4; --ink-2:#D3B8AD; --ink-3:#9D8077; --line:#3D2325;
+  --accent:#E09449; --accent-ink:#1E0C0D; --accent-soft:#40220F; --hl:#FFF94F;
+  --rail:#0E0506; --rail-2:#22100F; --rail-ink:#F8ECE4; --rail-dim:#A88378; --rail-hl:#FFF94F;
+  --pos:#5DC293; --neg:#F07468; --warn:#EBA24D; --good-soft:#15362A; --warn-soft:#3B2711; --neg-soft:#40191A;
+  --t-num:#E09449; --t-cat:#F0CC5C; --t-date:#5DC293; --t-bool:#F08A7E; --t-text:#A8908A;
+  --c1:#E09449; --c2:#7DB2D8; --c3:#F2E35A; --c4:#F07468; --c5:#5DC293; --c6:#C3A3E8;
+  --shadow:0 1px 2px rgb(0 0 0 / .35), 0 12px 30px -16px rgb(0 0 0 / .75); --lg1:#FFF94F; --lg2:#E09449; --lg3:#C25A12; --lg4:#A44200; --lg5:#7E2410; --lgA:#E09449; --lgB:#FFF94F; --hlp:38%; color-scheme:dark; }
+
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--paper); color:var(--ink); font:400 15px/1.55 var(--f-ui); -webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit; color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+h1,h2,h3{margin:0; text-wrap:balance; letter-spacing:-.015em}
+.mono,.num{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+.eyebrow{font:500 11px/1 var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3)}
+
+/* shell */
+.app{display:grid; grid-template-columns:248px minmax(0,1fr); min-height:100vh; background:linear-gradient(to right, var(--rail) 248px, transparent 248px)}
+.rail{--lg2:#E09449; --lg3:#C25A12; --lg4:#A44200; --lg5:#7E2410; --lgA:#E09449; position:sticky; top:0; height:100vh; color:var(--rail-ink); display:flex; flex-direction:column; gap:22px; overflow-y:auto;
+  padding-block:24px 20px; padding-left:max(18px, env(safe-area-inset-left,0px)); padding-right:18px; background:var(--rail)}
+.brand{display:flex; align-items:center; gap:11px; text-decoration:none; color:inherit}
+.brand svg{width:36px; height:36px; flex:none}
+.brand b{font:800 23px/1 var(--f-ui); letter-spacing:-.035em}
+.brand small{display:block; font:400 10.5px/1.2 var(--f-mono); color:var(--rail-dim); letter-spacing:.05em; margin-top:4px}
+.dscard{background:var(--rail-2); border-radius:12px; padding:12px 13px; display:flex; flex-direction:column; gap:6px}
+.dscard .eyebrow{color:var(--rail-dim)}
+.dscard b{font-weight:600; font-size:14px; overflow-wrap:anywhere}
+.dscard span.mono{font-size:11.5px; color:var(--rail-dim)}
+.dscard a{font-size:12.5px; color:var(--rail-hl); text-decoration:none; font-weight:500}
+.tabs{display:flex; flex-direction:column; gap:3px}
+.tab{display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:10px; color:var(--rail-dim); text-decoration:none; font-weight:500; font-size:14.5px; transition:background .15s,color .15s}
+.tab svg{width:18px; height:18px; flex:none}
+.tab:hover{color:var(--rail-ink); background:rgb(255 255 255 / .05)}
+.tab[aria-current="page"]{color:var(--rail-ink); background:rgb(255 249 79 / .10); box-shadow:inset 3px 0 0 var(--rail-hl)}
+.tab[aria-current="page"] svg{color:var(--rail-hl)}
+.tab.disabled{opacity:.4; pointer-events:none}
+.rail-foot{margin-top:auto; display:flex; flex-direction:column; gap:12px; font-size:12.5px; color:var(--rail-dim)}
+.rail-foot a{color:var(--rail-ink); text-decoration:none; border-bottom:1px solid rgb(255 255 255 / .22)}
+.theme-btn{display:inline-flex; align-items:center; gap:8px; background:rgb(255 255 255 / .06); border:1px solid rgb(255 255 255 / .1); color:var(--rail-ink);
+  padding:6px 11px; border-radius:999px; cursor:pointer; font-size:12.5px; align-self:flex-start}
+.theme-btn svg{width:15px; height:15px}
+.main{min-width:0; padding-block:32px 64px; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px; margin:0 auto; padding-inline:clamp(0px,2vw,24px)}
+.vhead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px}
+.vhead h1{font-size:clamp(26px,3.6vw,38px); font-weight:700; line-height:1.08; margin-top:6px}
+.vhead p{margin:8px 0 0; color:var(--ink-2); max-width:66ch}
+
+/* common */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow)}
+.panel{padding:20px 22px; min-width:0}
+.panel > h2{font-size:16.5px; font-weight:650; margin-bottom:4px}
+.hint{font-size:13.5px; color:var(--ink-3); margin:0 0 14px}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  padding:9px 15px; border-radius:10px; cursor:pointer; font-weight:500; font-size:14px; transition:transform .08s, border-color .15s, background .15s; text-decoration:none; white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn:active{transform:translateY(1px)}
+.btn svg{width:16px; height:16px}
+.btn.primary{background:var(--accent); color:var(--accent-ink); border-color:transparent; font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.primary:disabled{opacity:.5; cursor:not-allowed; filter:none}
+.btn.ghost{background:transparent; border-color:transparent; color:var(--ink-2)}
+.btn.ghost:hover{background:var(--sunk); color:var(--ink)}
+.btn.sm{padding:6px 10px; font-size:13px; border-radius:8px}
+.chip{display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:999px; font-size:12.5px; font-weight:500; background:var(--sunk); color:var(--ink-2); white-space:nowrap}
+.type{display:inline-flex; align-items:center; gap:5px; font:600 10.5px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; padding:4px 7px; border-radius:6px;
+  color:var(--tc); background:color-mix(in srgb, var(--tc) 13%, transparent)}
+.type.number,.type.integer{--tc:var(--t-num)} .type.category{--tc:var(--t-cat)} .type.date{--tc:var(--t-date)} .type.boolean{--tc:var(--t-bool)} .type.text{--tc:var(--t-text)}
+.flag{font:500 10.5px var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); border:1px solid var(--line); padding:2px 6px; border-radius:6px}
+.sel,.inp{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:14px; min-width:0}
+label.field{display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--ink-3); font-weight:500; min-width:0}
+.grid2{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:18px; margin-bottom:18px}
+.stack{display:flex; flex-direction:column; gap:18px}
+.scroll-x{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.muted{color:var(--ink-3); font-size:13.5px; margin:0}
+.loading{display:flex; align-items:center; gap:12px; padding:40px; justify-content:center; color:var(--ink-2)}
+.spin{width:20px; height:20px; border-radius:50%; border:2.5px solid var(--line); border-top-color:var(--accent); animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ================= landing ================= */
+body.home .app{display:none}
+.landing{display:none}
+body.home .landing{display:block}
+.lw{max-width:1200px; margin:0 auto; padding-left:max(20px, env(safe-area-inset-left,0px)); padding-right:max(20px, env(safe-area-inset-right,0px))}
+.lnav{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; background:color-mix(in srgb, var(--paper) 84%, transparent); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid transparent; transition:border-color .2s}
+.lnav.scrolled{border-bottom-color:var(--line)}
+.lnav .lw{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-block:14px}
+.lbrand{display:inline-flex; align-items:center; gap:10px; font:800 25px/1 var(--f-ui); letter-spacing:-.05em; color:var(--ink); text-decoration:none}
+.lbrand svg{width:34px; height:34px}
+.llinks{display:flex; gap:2px; align-items:center}
+.lk{background:none; border:0; padding:8px 12px; border-radius:8px; color:var(--ink-2); cursor:pointer; font-weight:500; font-size:14.5px}
+.lk:hover{color:var(--ink); background:var(--sunk)}
+.lk.ic{display:inline-grid; place-items:center; width:38px; height:38px; padding:0}
+.lk.ic svg{width:18px; height:18px}
+.btn.lg{padding:14px 22px; font-size:16px; border-radius:12px}
+.hmark{background:linear-gradient(transparent 62%, color-mix(in srgb, var(--hl) var(--hlp), transparent) 62%, color-mix(in srgb, var(--hl) var(--hlp), transparent) 92%, transparent 92%); padding-inline:.04em}
+
+.hero2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.02fr); gap:clamp(28px,5vw,64px); align-items:center; padding-block:clamp(28px,5vw,56px) clamp(48px,7vw,88px)}
+.hero2 h1{font-size:clamp(42px,6.6vw,88px); font-weight:800; line-height:.94; letter-spacing:-.055em; margin-top:16px}
+.lede{font-size:clamp(17px,1.55vw,20px); line-height:1.55; color:var(--ink-2); max-width:52ch; margin:24px 0 32px}
+.cta-row{display:flex; gap:12px; flex-wrap:wrap}
+.proof{display:flex; gap:clamp(18px,3vw,36px); flex-wrap:wrap; margin-top:40px; padding-top:22px; border-top:1px solid var(--line)}
+.proof div{font:500 11px/1.3 var(--f-mono); color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em}
+.proof b{display:block; font:800 30px/1 var(--f-ui); color:var(--ink); letter-spacing:-.04em; text-transform:none; margin-bottom:6px}
+
+.photo{position:relative; border-radius:22px; overflow:hidden; isolation:isolate; max-width:100%;
+  background:linear-gradient(var(--ang,172deg), #FFF94F 0 13%, #D58936 13% 30%, #A44200 30% 52%, #69140E 52% 72%, #3C1518 72% 100%)}
+.photo::after{content:""; position:absolute; inset:0; z-index:-1; background:repeating-linear-gradient(var(--ang,172deg), transparent 0 7px, rgb(0 0 0 / .05) 7px 8px)}
+.photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+.photo.noimg img{display:none}
+.photo .pcredit{position:absolute; right:10px; top:10px; font:500 10.5px var(--f-mono); color:#fff; background:rgb(20 6 7 / .45); padding:4px 8px; border-radius:6px; text-decoration:none; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+.photo.noimg .pcredit{display:none}
+.hero-photo{aspect-ratio:4/4.6}
+.core{position:absolute; left:16px; bottom:16px; right:16px; max-width:360px; padding:16px 18px; border-radius:16px;
+  background:color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); box-shadow:0 18px 40px -18px rgb(20 6 7 / .6); color:var(--ink)}
+.core .eyebrow{display:block; margin-bottom:10px}
+.core .plan{margin:0 0 10px}
+.core p{margin:0; font-size:13.5px; color:var(--ink-2)}
+.core p b{color:var(--ink); font-family:var(--f-mono); font-weight:600}
+
+.shead{display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:34px}
+.shead h2{font-size:clamp(30px,4.4vw,54px); font-weight:800; letter-spacing:-.045em; line-height:1; margin-top:12px; max-width:16ch}
+.shead p{margin:0; color:var(--ink-2); max-width:44ch; font-size:16.5px}
+
+.strata{padding-top:clamp(56px,8vw,100px)}
+.layer{position:relative; background:var(--lc); color:var(--lt); margin-top:-18px; padding-block:52px 40px; clip-path:polygon(0 18px, 100% 0, 100% 100%, 0 100%)}
+.layer:nth-child(even){clip-path:polygon(0 0, 100% 18px, 100% 100%, 0 100%)}
+.layer:first-child{margin-top:0}
+.layer .lw{display:grid; grid-template-columns:150px minmax(0,1fr) minmax(0,1fr); gap:clamp(18px,3vw,40px); align-items:center}
+.depth{font:600 13px/1.4 var(--f-mono); letter-spacing:.06em; opacity:.85}
+.depth b{display:block; font:800 34px/1 var(--f-ui); letter-spacing:-.04em; opacity:1; margin-bottom:6px}
+.layer h3{font-size:clamp(22px,2.4vw,30px); font-weight:750; letter-spacing:-.03em; margin-bottom:8px}
+.layer p{margin:0; font-size:15.5px; line-height:1.55; opacity:.88; max-width:48ch}
+.artefact{font:500 12.5px/1.7 var(--f-mono); padding:14px 16px; border-radius:12px; background:var(--la); border:1px solid color-mix(in srgb, currentColor 18%, transparent); overflow-x:auto; white-space:pre; min-width:0}
+.artefact i{font-style:normal; opacity:.6}
+.artefact em{font-style:normal; color:var(--le)}
+.l1{--lc:#F6E5D3; --lt:#2B1113; --la:rgb(255 255 255 / .55); --le:#A44200}
+.l2{--lc:#E7B07A; --lt:#2B1113; --la:rgb(255 255 255 / .32); --le:#69140E}
+.l3{--lc:#A44200; --lt:#FFF4EA; --la:rgb(0 0 0 / .16); --le:#FFF94F}
+.l4{--lc:#69140E; --lt:#FBEFE6; --la:rgb(0 0 0 / .2); --le:#FFF94F}
+.l5{--lc:#3C1518; --lt:#FBEFE6; --la:rgb(255 255 255 / .06); --le:#FFF94F; padding-block:60px 72px}
+.l5 h3{font-size:clamp(26px,3.2vw,40px)}
+.l5 .gem{width:54px; height:54px}
+
+.craft{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:clamp(28px,5vw,64px); align-items:center; padding-block:clamp(64px,9vw,120px)}
+.craft .photo{aspect-ratio:4/5; --ang:180deg}
+.facts{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px 28px; margin:28px 0}
+.facts div{border-top:2px solid var(--ink); padding-top:12px}
+.facts b{display:block; font:800 36px/1 var(--f-ui); letter-spacing:-.04em; margin-bottom:6px}
+.facts span{font-size:14px; color:var(--ink-2)}
+.code{font:400 13px/1.7 var(--f-mono); background:var(--rail); color:#F4E6DC; border-radius:14px; padding:18px 20px; overflow-x:auto; white-space:pre}
+.code .k{color:#E09449} .code .s{color:#FFF94F} .code .c{color:#A88378}
+
+.lsamples{padding-bottom:clamp(64px,9vw,120px)}
+.scards{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px}
+.scard{display:flex; flex-direction:column; text-align:left; padding:0; overflow:hidden; cursor:pointer; border-radius:18px; transition:transform .2s, box-shadow .2s; color:var(--ink)}
+.scard:hover{transform:translateY(-4px)}
+.scard .photo{border-radius:0; aspect-ratio:16/11}
+.scard .body{padding:18px 20px 20px; display:flex; flex-direction:column; gap:8px; flex:1}
+.scard h3{font-size:19px; letter-spacing:-.02em}
+.scard p{margin:0; font-size:14px; color:var(--ink-2); flex:1}
+.scard .go{font-weight:600; color:var(--accent); font-size:14px; margin-top:6px}
+
+.bring{margin-bottom:clamp(48px,7vw,90px); border-radius:28px; background:var(--rail); color:#FBEFE6; padding:clamp(28px,5vw,64px); display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:32px; align-items:center; position:relative; overflow:hidden}
+.bring h2{font-size:clamp(32px,4.6vw,58px); font-weight:800; letter-spacing:-.05em; line-height:.98}
+.bring p{color:#D9BBAE; font-size:16.5px; max-width:42ch; margin:16px 0 0}
+.bdrop{border:2px dashed rgb(255 249 79 / .45); border-radius:20px; padding:34px 24px; text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center; transition:background .15s, border-color .15s}
+.bdrop.over{background:rgb(255 249 79 / .08); border-color:#FFF94F}
+.bdrop svg{width:40px; height:40px; color:#FFF94F}
+.bdrop b{font-size:18px}
+.bdrop span{color:#C9A196; font-size:13.5px}
+.btn.canary{background:#FFF94F; color:#3C1518; border-color:transparent; font-weight:700}
+.btn.canary:hover{filter:brightness(.96)}
+.btn.outline-light{background:transparent; color:#FBEFE6; border-color:rgb(251 239 230 / .35)}
+.btn.outline-light:hover{border-color:#FBEFE6}
+
+.lfoot{border-top:1px solid var(--line); padding-block:28px 40px; font-size:13.5px; color:var(--ink-3)}
+.lfoot .lw{display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; align-items:flex-start}
+.lfoot a{color:var(--ink-2)}
+.lfoot p{margin:6px 0 0; max-width:62ch}
+
+@media (max-width:980px){
+  .hero2,.craft,.bring{grid-template-columns:minmax(0,1fr)}
+  .hero-photo{aspect-ratio:4/3.4}
+  .craft .photo{aspect-ratio:16/10}
+  .layer .lw{grid-template-columns:minmax(0,1fr)}
+  .scards{grid-template-columns:minmax(0,1fr)}
+  .llinks .lk.hide-sm{display:none}
+}
+@media (max-width:520px){ .facts{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .facts b{font-size:28px} .core{left:10px; right:10px; bottom:10px; padding:12px 14px} .core .plan{font-size:11px} .hero-photo{aspect-ratio:4/4.4} }
+
+/* open */
+.hero{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:28px; align-items:center; margin-bottom:28px}
+.hero h1{font-size:clamp(32px,5vw,54px); font-weight:800; line-height:1.02; letter-spacing:-.04em}
+.hero h1 em{font-style:normal; color:var(--ink); background:linear-gradient(transparent 58%, color-mix(in srgb, var(--hl) 85%, transparent) 58%, color-mix(in srgb, var(--hl) 85%, transparent) 92%, transparent 92%); padding-inline:2px}
+.hero p{font-size:17px; color:var(--ink-2); margin:14px 0 0; max-width:52ch}
+.drop{border:2px dashed var(--line); border-radius:18px; padding:30px 24px; text-align:center; background:var(--surface); transition:border-color .15s, background .15s; display:flex; flex-direction:column; align-items:center; gap:10px}
+.drop.over{border-color:var(--accent); background:var(--accent-soft)}
+.drop svg.big{width:44px; height:44px; color:var(--accent)}
+.drop b{font-size:17px}
+.drop .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+.paste{width:100%; min-height:120px; border:1px solid var(--line); border-radius:10px; background:var(--paper); padding:10px; font:400 12.5px/1.5 var(--f-mono); resize:vertical}
+.samples{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:28px}
+.sample{padding:18px; display:flex; flex-direction:column; gap:8px; cursor:pointer; text-align:left; transition:border-color .15s, transform .15s}
+.sample:hover{border-color:var(--accent); transform:translateY(-2px)}
+.sample h3{font-size:16.5px}
+.sample p{margin:0; font-size:13.5px; color:var(--ink-2); flex:1}
+.sample .meta{display:flex; gap:6px; flex-wrap:wrap}
+.built{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:24px}
+.built .card{padding:18px}
+.built h3{font-size:15px; margin:10px 0 6px}
+.built p{margin:0; font-size:13.5px; color:var(--ink-2)}
+.built svg{width:22px; height:22px; color:var(--accent)}
+.credit{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:20px 22px}
+.credit p{margin:4px 0 0; font-size:16px}
+.credit .links{display:flex; gap:8px; flex-wrap:wrap}
+.err{padding:12px 14px; border-radius:10px; background:var(--neg-soft); color:var(--ink); font-size:14px; margin-top:12px; text-align:left}
+
+/* overview */
+.kpis{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:18px}
+.kpi{padding:15px 17px}
+.kpi .eyebrow{display:block; margin-bottom:9px}
+.kpi b{font:700 28px/1 var(--f-ui); letter-spacing:-.03em; display:block}
+.kpi small{display:block; margin-top:6px; font-size:12.5px; color:var(--ink-3)}
+.findings{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.findings li{display:grid; grid-template-columns:26px minmax(0,1fr); gap:10px; align-items:start; padding:10px 12px; border-radius:10px; background:var(--sunk); font-size:14px}
+.findings li .ic{width:26px; height:26px; border-radius:8px; display:grid; place-items:center; font:700 13px var(--f-mono)}
+.findings li.good .ic{background:var(--good-soft); color:var(--pos)}
+.findings li.warn .ic{background:var(--warn-soft); color:var(--warn)}
+.findings li.info .ic{background:var(--accent-soft); color:var(--accent)}
+.findings code,.colref{font:500 12.5px var(--f-mono); background:var(--surface); border:1px solid var(--line); padding:1px 5px; border-radius:5px; color:var(--ink); text-decoration:none; cursor:pointer}
+.chart text{fill:var(--ink-3); font:500 10.5px var(--f-mono)}
+.chart .grid{stroke:var(--line)}
+.chart .axis{stroke:var(--ink-3)}
+.chart .lbl{fill:var(--ink-2)}
+.corr text.v{font:600 10px var(--f-mono)}
+table.data{border-collapse:separate; border-spacing:0; width:100%; font-size:13px}
+table.data th{position:sticky; top:0; background:var(--sunk); text-align:left; font:600 12px var(--f-mono); color:var(--ink-2); padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap; z-index:1}
+table.data td{padding:7px 12px; border-bottom:1px solid var(--line); white-space:nowrap; max-width:280px; overflow:hidden; text-overflow:ellipsis}
+table.data td.n{text-align:right; font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+table.data td.null{color:var(--ink-3); font-style:italic}
+table.data tr:hover td{background:color-mix(in srgb, var(--accent) 5%, transparent)}
+.tbl{max-height:460px; overflow:auto; border:1px solid var(--line); border-radius:10px}
+
+/* columns */
+.colgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+.col{padding:18px 20px; scroll-margin-top:90px}
+.col.flash{animation:flash 1.4s}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:var(--shadow)}}
+.col-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+.col-head h3{font:600 15px var(--f-mono); letter-spacing:0; overflow-wrap:anywhere}
+.statgrid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px 12px; margin-bottom:12px}
+.statgrid div{display:flex; flex-direction:column; min-width:0}
+.statgrid span{font:500 10.5px var(--f-mono); color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em}
+.statgrid b{font:500 13.5px var(--f-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.topvals{display:flex; flex-direction:column; gap:6px}
+.topvals .r{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 54px; gap:10px; align-items:center; font-size:13px}
+.topvals .r span:first-child{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.track{height:8px; background:var(--sunk); border-radius:99px; overflow:hidden}
+.track i{display:block; height:100%; background:var(--tc, var(--accent)); border-radius:99px}
+.topvals .p{font:500 12px var(--f-mono); color:var(--ink-3); text-align:right}
+.hist rect{fill:var(--tc, var(--accent)); opacity:.85}
+
+/* query */
+.editor{overflow:hidden}
+.editor textarea{display:block; width:100%; min-height:150px; border:0; outline:0; resize:vertical; padding:16px 18px; background:transparent;
+  font:400 14.5px/1.6 var(--f-mono); color:var(--ink); tab-size:2}
+.ebar{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:var(--sunk); border-top:1px solid var(--line)}
+.kbd{font:500 11px var(--f-mono); padding:1px 5px; border:1px solid var(--line); border-radius:4px; color:var(--ink-3); background:var(--surface)}
+.examples{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px}
+.examples button{border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:5px 12px; font-size:13px; cursor:pointer; color:var(--ink-2)}
+.examples button:hover{border-color:var(--accent); color:var(--ink)}
+.plan{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:14px 0 12px; font:500 12px var(--f-mono)}
+.plan .st{padding:5px 9px; border-radius:8px; background:var(--sunk); color:var(--ink-2)}
+.plan .st b{color:var(--ink)}
+.plan .arr{color:var(--ink-3)}
+.qerr{padding:14px 16px; border-radius:10px; background:var(--neg-soft); font:400 13.5px/1.5 var(--f-mono); margin-top:14px; white-space:pre-wrap}
+.qerr b{font-family:var(--f-ui)}
+
+/* charts */
+.ctrls{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:16px}
+.caption{font-size:14px; color:var(--ink-2); margin:0 0 10px}
+.legend{display:flex; gap:12px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); margin-top:8px}
+.legend i{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px}
+.tip{position:absolute; pointer-events:none; background:var(--ink); color:var(--paper); padding:7px 10px; border-radius:8px; font:500 12px var(--f-mono); transform:translate(-50%,calc(-100% - 10px)); white-space:nowrap; z-index:5}
+.cwrap{position:relative}
+
+/* predict */
+.psetup{display:grid; grid-template-columns:minmax(0,260px) minmax(0,1fr); gap:20px}
+.feats{display:flex; flex-wrap:wrap; gap:6px; max-height:170px; overflow:auto}
+.feats label{display:inline-flex; align-items:center; gap:6px; font-size:13px; padding:5px 10px 5px 8px; border-radius:999px; border:1px solid var(--line); cursor:pointer; background:var(--surface)}
+.feats label:has(input:checked){border-color:var(--accent); background:var(--accent-soft)}
+.feats input{accent-color:var(--accent); margin:0}
+.task{display:inline-flex; align-items:center; gap:6px; font:600 12px var(--f-mono); padding:5px 10px; border-radius:8px; background:var(--accent-soft); color:var(--accent)}
+.metrics{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:16px}
+.metric{padding:12px 14px; border-radius:12px; background:var(--sunk)}
+.metric span{display:block; font:500 10.5px var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
+.metric b{display:block; font:700 24px/1.2 var(--f-ui); margin-top:4px}
+.metric small{font-size:12px; color:var(--ink-3)}
+.cm{border-collapse:collapse; font:500 13px var(--f-mono)}
+.cm th{font-weight:500; color:var(--ink-3); padding:6px 10px; text-align:center; font-size:11.5px}
+.cm td{width:64px; height:44px; text-align:center; border-radius:6px; border:3px solid var(--surface)}
+.imp .r{display:grid; grid-template-columns:minmax(0,130px) minmax(0,1fr) 46px; gap:10px; align-items:center; font-size:13px; margin-bottom:7px}
+.imp .r span:first-child{font-family:var(--f-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.whatif{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:16px}
+.whatif .inp,.whatif .sel{width:100%}
+.probs .r{display:grid; grid-template-columns:minmax(0,110px) minmax(0,1fr) 54px; gap:10px; align-items:center; font-size:14px; margin-bottom:8px}
+.probs .track{height:12px}
+.bigpred{font:700 34px/1.1 var(--f-ui); letter-spacing:-.02em}
+.epoch{font:500 12px var(--f-mono); color:var(--ink-3)}
+
+.toast{position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,20px); opacity:0; pointer-events:none;
+  background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-size:14px; box-shadow:var(--shadow); transition:opacity .2s, transform .2s; z-index:60; max-width:calc(100vw - 32px)}
+.toast.show{opacity:1; transform:translate(-50%,0)}
+.mfoot{display:none}
+
+@media (max-width:1150px){ .kpis{grid-template-columns:repeat(3,minmax(0,1fr))} .built{grid-template-columns:repeat(2,minmax(0,1fr))} .ctrls{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:980px){ .grid2,.hero,.psetup{grid-template-columns:minmax(0,1fr)} .colgrid{grid-template-columns:minmax(0,1fr)} .samples{grid-template-columns:minmax(0,1fr)} .metrics{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr); background:none}
+  .rail{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; height:auto; flex-direction:row; align-items:center; justify-content:space-between; gap:10px; overflow:visible;
+    padding-block:11px; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+  body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:30; background:var(--rail)}
+  .brand svg{width:30px; height:30px} .brand b{font-size:20px} .brand small{display:none}
+  .dscard{display:none}
+  .rail-foot{margin:0; flex-direction:row} .rail-foot .credit-line{display:none}
+  .tabs{position:fixed; left:0; right:0; bottom:0; z-index:40; flex-direction:row; justify-content:space-around; background:var(--rail); gap:0;
+    padding-top:6px; padding-bottom:calc(6px + env(safe-area-inset-bottom,0px)); padding-left:max(4px, env(safe-area-inset-left,0px)); padding-right:max(4px, env(safe-area-inset-right,0px))}
+  .tab{flex-direction:column; gap:3px; font-size:10.5px; padding:6px 2px; flex:1; justify-content:center; text-align:center}
+  .main{padding-block:22px 110px}
+  .mfoot{display:block; text-align:center; font-size:12.5px; color:var(--ink-3); margin-top:36px}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ctrls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .built{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:420px){ .tab .tl{font-size:10px} .metrics{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .kpi b{font-size:23px} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="logo" viewBox="0 0 64 64">
+      <clipPath id="qclip"><path fill-rule="evenodd" d="M32 4a26 26 0 1 1 0 52a26 26 0 1 1 0-52zM32 17.5a12.5 12.5 0 1 0 0 25a12.5 12.5 0 1 0 0-25zM38.5 41.5L46 34L61 49L61 53L53 61L49 61L38.5 50.5Z"/></clipPath>
+      <g clip-path="url(#qclip)"><rect width="64" height="13" style="fill:var(--lg1)"/><rect y="13" width="64" height="10" style="fill:var(--lg2)"/><rect y="23" width="64" height="14" style="fill:var(--lg3)"/><rect y="37" width="64" height="11" style="fill:var(--lg4)"/><rect y="48" width="64" height="16" style="fill:var(--lg5)"/></g>
+      <path d="M32 24.5l5.5 5.5-5.5 5.5-5.5-5.5z" style="fill:var(--lgA)"/><path d="M32 24.5l5.5 5.5h-11z" style="fill:var(--lgB)"/>
+    </symbol>
+    <symbol id="i-open" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-over" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="10" width="7" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-cols" viewBox="0 0 24 24"><path d="M5 4v16M12 4v16M19 4v16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3 8h4M10 14h4M17 10h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-sql" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-brain" viewBox="0 0 24 24"><circle cx="6" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7.8 8l2.5 2.8M7.8 16l2.5-2.8M13.8 11l2.5-2.8M13.8 13l2.5 2.8" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  </defs>
+</svg>
+
+<div class="landing" id="landing"></div>
+<div class="app">
+  <aside class="rail">
+    <a class="brand" href="#home" aria-label="Quarry home"><svg aria-hidden="true"><use href="#logo"/></svg><span><b>Quarry</b><small>data, understood</small></span></a>
+    <div class="dscard" id="dscard"></div>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" href="#open" data-v="open"><svg aria-hidden="true"><use href="#i-open"/></svg><span class="tl">Open</span></a>
+      <a class="tab" href="#overview" data-v="overview"><svg aria-hidden="true"><use href="#i-over"/></svg><span class="tl">Overview</span></a>
+      <a class="tab" href="#columns" data-v="columns"><svg aria-hidden="true"><use href="#i-cols"/></svg><span class="tl">Columns</span></a>
+      <a class="tab" href="#query" data-v="query"><svg aria-hidden="true"><use href="#i-sql"/></svg><span class="tl">SQL</span></a>
+      <a class="tab" href="#charts" data-v="charts"><svg aria-hidden="true"><use href="#i-chart"/></svg><span class="tl">Charts</span></a>
+      <a class="tab" href="#predict" data-v="predict"><svg aria-hidden="true"><use href="#i-brain"/></svg><span class="tl">Predict</span></a>
+    </nav>
+    <div class="rail-foot">
+      <button class="theme-btn" id="themeBtn" type="button"><svg aria-hidden="true"><use href="#i-auto"/></svg><span>System</span></button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="wrap" id="view"></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ======================================================================
+   Quarry core: CSV parsing, type inference and profiling.
+   Written as one factory so the same code runs inside a Web Worker
+   (built from this function's source) and on the main thread as a fallback.
+   ====================================================================== */
+function QuarryCore(S){
+  var MISSING = { '':1, 'na':1, 'n/a':1, 'null':1, 'nan':1, 'none':1, '-':1, '?':1, '#n/a':1 };
+  var NUM_RE = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
+  var DATE_RE = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
+  var BOOLS = { 'true':1, 'false':1, 'yes':1, 'no':1, 'y':1, 'n':1 };
+
+  S.detectDelimiter = function(text){
+    var lines = text.slice(0, 20000).split(/\r?\n/).filter(function(l){ return l.trim(); }).slice(0, 12);
+    var best = ',', bestScore = -1;
+    [',', ';', '\t', '|'].forEach(function(d){
+      var counts = lines.map(function(l){ var c = 0, q = false; for (var i = 0; i < l.length; i++){ if (l[i] === '"') q = !q; else if (!q && l[i] === d) c++; } return c; });
+      if (!counts.length || counts[0] === 0) return;
+      var same = counts.filter(function(c){ return c === counts[0]; }).length / counts.length;
+      var score = counts[0] * (same > .8 ? 10 : 1);
+      if (score > bestScore){ bestScore = score; best = d; }
+    });
+    return best;
+  };
+
+  S.parseCSV = function(text, d){
+    var rows = [], row = [], f = '', q = false, i = text.charCodeAt(0) === 0xFEFF ? 1 : 0, n = text.length, start = i;
+    for (; i < n; i++){
+      var c = text[i];
+      if (q){
+        if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i++; } else q = false; }
+        else f += c;
+      } else if (c === '"' && f === ''){ q = true; }
+      else if (c === d){ row.push(f); f = ''; }
+      else if (c === '\n' || c === '\r'){
+        row.push(f); f = '';
+        if (c === '\r' && text[i+1] === '\n') i++;
+        if (row.length > 1 || row[0] !== '') rows.push(row);
+        row = [];
+      } else f += c;
+    }
+    if (f !== '' || row.length){ row.push(f); if (row.length > 1 || row[0] !== '') rows.push(row); }
+    return rows;
+  };
+
+  function parseDate(s){
+    var m = DATE_RE.exec(s); if (!m) return null;
+    var t = Date.UTC(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+    return isNaN(t) ? null : t;
+  }
+  S.parseDate = parseDate;
+
+  S.buildDataset = function(text, name){
+    var t0 = Date.now();
+    if (!text || !text.trim()) throw new Error('The file is empty.');
+    var d = S.detectDelimiter(text);
+    var rows = S.parseCSV(text, d);
+    if (rows.length < 2) throw new Error('Quarry needs a header row and at least one data row.');
+    var header = rows[0].map(function(h, i){ h = String(h).trim(); return h || ('column_' + (i+1)); });
+    var seen = {};
+    header = header.map(function(h){ var k = h.toLowerCase(), base = h, j = 2; while (seen[k]){ h = base + '_' + j++; k = h.toLowerCase(); } seen[k] = 1; return h; });
+    var width = header.length, body = rows.slice(1), n = body.length;
+    if (width > 400) throw new Error('This file has ' + width + ' columns. Quarry handles up to 400.');
+    var cols = header.map(function(h, ci){
+      var raw = new Array(n), nonMissing = 0, isNum = true, isInt = true, isDate = true, hasTime = false, isBool = true, uniq = {}, uCount = 0, totalLen = 0;
+      for (var r = 0; r < n; r++){
+        var v = body[r][ci]; v = v == null ? '' : String(v).trim();
+        if (MISSING[v.toLowerCase()]){ raw[r] = null; continue; }
+        raw[r] = v; nonMissing++; totalLen += v.length;
+        if (uCount < 5000 && !uniq[v]){ uniq[v] = 1; uCount++; }
+        if (isNum && !NUM_RE.test(v)) isNum = false;
+        if (isNum && isInt && v.indexOf('.') >= 0 || /e/i.test(v)) isInt = false;
+        if (isDate){ var m = DATE_RE.exec(v); if (!m) isDate = false; else if (m[4]) hasTime = true; }
+        if (isBool && !BOOLS[v.toLowerCase()]) isBool = false;
+      }
+      var type;
+      if (!nonMissing) type = 'text';
+      else if (isNum) type = isInt ? 'integer' : 'number';
+      else if (isDate) type = 'date';
+      else if (isBool && uCount <= 2) type = 'boolean';
+      else if (uCount <= Math.max(15, Math.min(60, nonMissing * 0.05))) type = 'category';
+      else type = 'text';
+      var values = raw;
+      if (type === 'integer' || type === 'number') values = raw.map(function(v){ return v === null ? null : +v; });
+      else if (type === 'date') values = raw.map(function(v){ return v === null ? null : parseDate(v); });
+      return { name: h, key: h.toLowerCase(), type: type, values: values, hasTime: hasTime, avgLen: nonMissing ? totalLen / nonMissing : 0 };
+    });
+    return { name: name || 'data', n: n, delimiter: d, cols: cols, parseMs: Date.now() - t0 };
+  };
+
+  function quantile(sorted, p){
+    if (!sorted.length) return null;
+    var idx = (sorted.length - 1) * p, lo = Math.floor(idx), hi = Math.ceil(idx);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+  }
+
+  S.profile = function(ds){
+    var t0 = Date.now(), n = ds.n;
+    var cols = ds.cols.map(function(c){
+      var vals = c.values, present = [], missing = 0;
+      for (var i = 0; i < n; i++){ if (vals[i] === null) missing++; else present.push(vals[i]); }
+      var p = { name: c.name, type: c.type, missing: missing, count: present.length };
+      var counts = {}, unique = 0;
+      for (var j = 0; j < present.length; j++){ var k = present[j]; if (!counts.hasOwnProperty(k)){ counts[k] = 0; unique++; } counts[k]++; }
+      p.unique = unique;
+      p.isId = present.length > 20 && unique === present.length && (c.type === 'integer' || c.type === 'text' || c.type === 'category') && missing === 0;
+      if (c.type === 'integer' || c.type === 'number' || c.type === 'date'){
+        var s = present.slice().sort(function(a,b){ return a - b; });
+        var sum = 0; for (var a = 0; a < s.length; a++) sum += s[a];
+        var mean = s.length ? sum / s.length : null, m2 = 0, m3 = 0;
+        for (var b = 0; b < s.length; b++){ var dv = s[b] - mean; m2 += dv*dv; m3 += dv*dv*dv; }
+        var sd = s.length > 1 ? Math.sqrt(m2 / (s.length - 1)) : 0;
+        p.min = s[0]; p.max = s[s.length-1]; p.mean = mean; p.sd = sd;
+        p.q1 = quantile(s, .25); p.median = quantile(s, .5); p.q3 = quantile(s, .75);
+        p.skew = s.length > 2 && m2 > 0 ? (m3 / s.length) / Math.pow(m2 / s.length, 1.5) : 0;
+        var iqr = p.q3 - p.q1, lo = p.q1 - 1.5 * iqr, hi = p.q3 + 1.5 * iqr, out = 0;
+        if (c.type !== 'date') for (var o = 0; o < s.length; o++) if (s[o] < lo || s[o] > hi) out++;
+        p.outliers = out; p.outLo = lo; p.outHi = hi;
+        var range = p.max - p.min, bins = 24, step;
+        if (c.type === 'integer' && range > 0 && range < 30){ bins = range + 1; step = 1; }
+        else step = range > 0 ? range / bins : 1;
+        var h = []; for (var hb = 0; hb < bins; hb++) h.push(0);
+        for (var q = 0; q < s.length; q++){ var bi = range > 0 ? Math.min(bins - 1, Math.floor((s[q] - p.min) / step)) : 0; h[bi]++; }
+        p.hist = h; p.histStep = step;
+      } else {
+        var top = Object.keys(counts).map(function(k){ return [k, counts[k]]; }).sort(function(a,b){ return b[1] - a[1]; });
+        p.top = top.slice(0, 8);
+        p.topShare = present.length ? top[0][1] / present.length : 0;
+        p.avgLen = c.avgLen;
+      }
+      return p;
+    });
+    var seen = {}, dups = 0;
+    for (var r = 0; r < n; r++){
+      var key = ''; for (var ci = 0; ci < ds.cols.length; ci++) key += ds.cols[ci].values[r] + '\u0001';
+      if (seen[key]) dups++; else seen[key] = 1;
+    }
+    var numIdx = [];
+    ds.cols.forEach(function(c, i){ if ((c.type === 'integer' || c.type === 'number') && !cols[i].isId && cols[i].unique > 2) numIdx.push(i); });
+    numIdx = numIdx.slice(0, 14);
+    var corr = numIdx.map(function(){ return numIdx.map(function(){ return null; }); });
+    for (var x = 0; x < numIdx.length; x++){
+      corr[x][x] = 1;
+      for (var y = x + 1; y < numIdx.length; y++){
+        var A = ds.cols[numIdx[x]].values, B = ds.cols[numIdx[y]].values, cnt = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+        for (var z = 0; z < n; z++){ var u = A[z], w = B[z]; if (u === null || w === null) continue; cnt++; sa += u; sb += w; saa += u*u; sbb += w*w; sab += u*w; }
+        var cov = sab - sa*sb/cnt, va = saa - sa*sa/cnt, vb = sbb - sb*sb/cnt;
+        var rr = cnt > 2 && va > 0 && vb > 0 ? cov / Math.sqrt(va*vb) : null;
+        corr[x][y] = corr[y][x] = rr;
+      }
+    }
+    return { cols: cols, duplicates: dups, corrCols: numIdx.map(function(i){ return ds.cols[i].name; }), corr: corr, profileMs: Date.now() - t0 };
+  };
+  return S;
+}
+</script>
+
+<script>
+(() => {
+'use strict';
+const Core = QuarryCore({});
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+const isNumT = t => t === 'integer' || t === 'number';
+const fmtInt = v => Math.round(v).toLocaleString('en-US');
+function fmtNum(v){
+  if (v === null || v === undefined || Number.isNaN(v)) return '';
+  if (typeof v !== 'number') return String(v);
+  if (Number.isInteger(v) && Math.abs(v) < 1e15) return v.toLocaleString('en-US');
+  const a = Math.abs(v);
+  if (a >= 1e6) return v.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (a >= 100) return v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  if (a >= 1) return v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  return v.toLocaleString('en-US', { maximumSignificantDigits: 3 });
+}
+const pad = n => String(n).padStart(2, '0');
+function fmtDate(ms, time){
+  if (ms === null || ms === undefined) return '';
+  const d = new Date(ms);
+  const s = `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+  return time ? `${s} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` : s;
+}
+const fmtVal = (v, col) => v === null || v === undefined ? '' : col && col.type === 'date' ? fmtDate(v, col.hasTime) : typeof v === 'number' ? fmtNum(v) : typeof v === 'boolean' ? String(v) : String(v);
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
+
+/* ---------------- theme ---------------- */
+const THEMES = ['system', 'light', 'dark'];
+let themeMode = THEMES.includes(ls.get('quarry.theme')) ? ls.get('quarry.theme') : 'system';
+function applyTheme(){
+  if (themeMode === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', themeMode);
+  $$('[data-theme-btn]').forEach(b => {
+    b.querySelector('use').setAttribute('href', themeMode === 'dark' ? '#i-moon' : themeMode === 'light' ? '#i-sun' : '#i-auto');
+    const sp = b.querySelector('span'); if (sp) sp.textContent = themeMode[0].toUpperCase() + themeMode.slice(1);
+    b.setAttribute('aria-label', 'Theme: ' + themeMode + '. Click to change.');
+  });
+}
+function cycleTheme(){ themeMode = THEMES[(THEMES.indexOf(themeMode) + 1) % 3]; ls.set('quarry.theme', themeMode); applyTheme(); }
+$('#themeBtn').setAttribute('data-theme-btn', '');
+$('#themeBtn').addEventListener('click', cycleTheme);
+applyTheme();
+
+/* ---------------- sample data (deterministic, synthetic) ---------------- */
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function normal(r){ let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const pick = (r, arr, w) => { if (!w) return arr[Math.floor(r() * arr.length)]; let x = r() * w.reduce((s, a) => s + a, 0); for (let i = 0; i < arr.length; i++){ x -= w[i]; if (x <= 0) return arr[i]; } return arr[arr.length - 1]; };
+const isoDay = ms => fmtDate(ms);
+function csv(rows){ return rows.map(r => r.map(v => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n'); }
+const SAMPLES = {
+  heart: { title: 'Heart health screening', desc: 'Community screening results across seven districts. Predict which patients are at high cardiovascular risk.', tags: ['1,200 rows', '12 columns', 'Classification'],
+    make(){
+      const r = rng(7), rows = [['patient_id','visit_date','district','age','sex','bmi','systolic_bp','cholesterol','glucose','smoker','activity_level','risk']];
+      const districts = ['Gasabo','Kicukiro','Nyarugenge','Musanze','Huye','Rubavu','Rwamagana'], start = Date.UTC(2025, 10, 1);
+      for (let i = 0; i < 1200; i++){
+        const age = clamp(Math.round(47 + 14 * normal(r)), 18, 89), sex = r() < .52 ? 'F' : 'M';
+        const act = pick(r, ['low','moderate','high'], [.38,.42,.2]);
+        const smoker = r() < (sex === 'M' ? .24 : .08) ? 'yes' : 'no';
+        const district = pick(r, districts, [.24,.18,.17,.12,.11,.1,.08]);
+        const bmi = +clamp(25.4 + (act === 'low' ? 2 : act === 'high' ? -1.6 : 0) + 4.2 * normal(r), 16, 46).toFixed(1);
+        const sbp = Math.round(clamp(104 + age * .52 + (bmi - 25) * .95 + (smoker === 'yes' ? 6 : 0) + (district === 'Nyarugenge' ? 4 : 0) + 12 * normal(r), 85, 210));
+        const chol = Math.round(clamp(150 + age * .9 + (bmi - 25) * 1.6 + 28 * normal(r), 110, 340));
+        const glu = Math.round(clamp(84 + (bmi - 25) * 1.7 + age * .2 + 14 * normal(r), 60, 260));
+        const z = -15.2 + .05 * age + .052 * sbp + .011 * chol + .07 * bmi + .013 * glu + (smoker === 'yes' ? .9 : 0) + (act === 'low' ? .45 : act === 'high' ? -.6 : 0) + .5 * normal(r);
+        const risk = 1 / (1 + Math.exp(-z)) > r() ? 'high' : 'low';
+        const date = isoDay(start + Math.floor(r() * 365) * 864e5);
+        rows.push(['P' + String(10001 + i), date, district, age, sex, r() < .03 ? '' : bmi, sbp, r() < .025 ? '' : chol, glu, smoker, act, risk]);
+      }
+      return csv(rows);
+    } },
+  coffee: { title: 'Kigali café sales', desc: 'Six months of orders from four branches. Explore busy hours, best sellers and how people pay.', tags: ['1,800 rows', '10 columns', 'Time series'],
+    make(){
+      const r = rng(21), rows = [['order_date','hour','branch','product','quantity','unit_price_rwf','total_rwf','payment','temperature_c','loyalty_member']];
+      const prices = { Espresso:1500, Cappuccino:2500, Latte:2800, 'African tea':1200, Mandazi:500, 'Passion juice':2000 };
+      const prods = Object.keys(prices), start = Date.UTC(2026, 3, 1);
+      for (let i = 0; i < 1800; i++){
+        const day = Math.floor(r() * 183), ms = start + day * 864e5, dow = new Date(ms).getUTCDay();
+        const hour = clamp(Math.round(pick(r, [8, 13, 17], [.45,.3,.25]) + 1.6 * normal(r)), 6, 21);
+        const temp = +(22 + 3 * Math.sin(day / 30) + (hour >= 11 && hour <= 16 ? 3 : 0) + 1.6 * normal(r)).toFixed(1);
+        const w = prods.map(p => p === 'Passion juice' ? (temp > 24 ? 3 : 1) : p === 'African tea' ? (hour < 10 ? 3 : 1.2) : p === 'Mandazi' ? (hour < 11 ? 2.5 : 1) : 2);
+        const product = pick(r, prods, w);
+        const branch = pick(r, ['Kimihurura','Nyamirambo','Remera','Kacyiru'], dow === 0 || dow === 6 ? [.3,.32,.22,.16] : [.3,.18,.27,.25]);
+        const qty = product === 'Mandazi' ? 1 + Math.floor(r() * 4) : r() < .8 ? 1 : 2;
+        const pay = pick(r, ['MoMo','Card','Cash'], [.56,.25,.19]);
+        rows.push([isoDay(ms), hour, branch, product, qty, prices[product], qty * prices[product], pay, temp, r() < .34 ? 'yes' : 'no']);
+      }
+      rows.splice(1, rows.length - 1, ...rows.slice(1).sort((a, b) => a[0].localeCompare(b[0]) || a[1] - b[1]));
+      return csv(rows);
+    } },
+  students: { title: 'Student performance', desc: 'Study habits and final scores for 800 students. Predict a final score from hours, sleep and attendance.', tags: ['800 rows', '9 columns', 'Regression'],
+    make(){
+      const r = rng(99), rows = [['student_id','programme','study_hours_week','sleep_hours','attendance_pct','assignments_submitted','previous_gpa','part_time_job','final_score']];
+      const progs = ['Software Engineering','Business','Global Challenges','Entrepreneurship'];
+      for (let i = 0; i < 800; i++){
+        const prog = pick(r, progs, [.35,.25,.22,.18]), job = r() < .3 ? 'yes' : 'no';
+        const study = +clamp(14 + 6 * normal(r) - (job === 'yes' ? 3 : 0), 1, 40).toFixed(1);
+        const sleep = +clamp(6.8 + 1.1 * normal(r), 3.5, 10).toFixed(1);
+        const att = Math.round(clamp(84 + 10 * normal(r), 30, 100));
+        const asg = clamp(Math.round(7.5 + 2 * normal(r) + (att - 84) / 15), 0, 10);
+        const gpa = +clamp(3.0 + .45 * normal(r), 1.8, 4).toFixed(2);
+        const score = Math.round(clamp(6 + .95 * study - 2.6 * Math.abs(sleep - 7.6) + .22 * att + 1.9 * asg + 7.5 * gpa - (job === 'yes' ? 2.5 : 0) + 5.5 * normal(r), 0, 100));
+        rows.push(['S' + (2001 + i), prog, r() < .02 ? '' : study, sleep, att, asg, gpa, job, score]);
+      }
+      return csv(rows);
+    } }
+};
+
+/* ---------------- loading pipeline (Web Worker with fallback) ---------------- */
+let worker = null;
+try {
+  const src = '(' + QuarryCore.toString() + ')(self);self.onmessage=function(e){try{var ds=self.buildDataset(e.data.text,e.data.name);var pr=self.profile(ds);self.postMessage({ok:true,ds:ds,prof:pr})}catch(err){self.postMessage({ok:false,error:String(err&&err.message||err)})}}';
+  worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+} catch(e){ worker = null; }
+let state = { ds: null, prof: null, source: null, sampleId: null, onWorker: false, loading: false, loadError: '' };
+function runLocal(text, name){ const ds = Core.buildDataset(text, name); return { ok: true, ds, prof: Core.profile(ds), local: true }; }
+function process(text, name){
+  return new Promise(resolve => {
+    if (!worker){ try { resolve(runLocal(text, name)); } catch(e){ resolve({ ok: false, error: e.message }); } return; }
+    let done = false;
+    const fallback = () => { if (done) return; done = true; try { resolve(runLocal(text, name)); } catch(e){ resolve({ ok: false, error: e.message }); } };
+    worker.onmessage = e => { if (done) return; done = true; resolve(e.data); };
+    worker.onerror = ev => { ev.preventDefault && ev.preventDefault(); worker = null; fallback(); };
+    try { worker.postMessage({ text, name }); } catch(e){ worker = null; fallback(); }
+  });
+}
+async function loadText(text, name, source, sampleId, stay){
+  state.loading = true; state.loadError = '';
+  if (currentView() === 'open') renderOpen();
+  const t0 = performance.now();
+  const res = await process(text, name);
+  state.loading = false;
+  if (!res.ok){ state.loadError = res.error; if (currentView() === 'open') renderOpen(); else location.hash = 'open'; return false; }
+  state.ds = res.ds; state.prof = res.prof; state.source = source; state.sampleId = sampleId || null; state.onWorker = !res.local;
+  state.totalMs = Math.max(1, Math.round(performance.now() - t0)); state.bytes = text.length;
+  state.colMap = new Map(state.ds.cols.map(c => [c.key, c]));
+  state.query = null; state.chart = null; state.model = null; state.qResult = null;
+  if (sampleId) ls.set('quarry.sample', sampleId);
+  renderRail();
+  if (stay) route(); else if (location.hash === '#overview') route(); else location.hash = 'overview';
+  return true;
+}
+function openFile(f){
+  if (!f) return;
+  if (f.size > 60e6){ state.loadError = 'The file is larger than 60 MB. Try a smaller extract.'; location.hash = 'open'; if (currentView() === 'open') renderOpen(); return; }
+  const r = new FileReader();
+  r.onload = () => loadText(String(r.result), f.name.replace(/\.(csv|tsv|txt)$/i, ''), `${f.name} · ${(f.size / 1024).toFixed(0)} KB`);
+  r.onerror = () => { state.loadError = 'The browser could not read that file.'; location.hash = 'open'; };
+  r.readAsText(f);
+}
+function loadSample(id, stay){ const s = SAMPLES[id]; return loadText(s.make(), s.title, 'Sample dataset (synthetic)', id, stay); }
+
+/* ---------------- router ---------------- */
+const VIEWS = { home: renderHome, open: renderOpen, overview: renderOverview, columns: renderColumns, query: renderQuery, charts: renderCharts, predict: renderPredict };
+const currentView = () => { const v = location.hash.slice(1); return VIEWS[v] ? v : 'home'; };
+function route(){
+  let v = currentView();
+  if (v !== 'open' && v !== 'home' && !state.ds) v = 'open';
+  document.body.classList.toggle('home', v === 'home');
+  $$('.tab').forEach(a => { if (a.dataset.v === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); a.classList.toggle('disabled', a.dataset.v !== 'open' && !state.ds); });
+  if (state.trainTimer){ cancelAnimationFrame(state.trainTimer); state.trainTimer = null; }
+  VIEWS[v]();
+  window.scrollTo({ top: 0 });
+}
+window.addEventListener('hashchange', route);
+function renderRail(){
+  const el = $('#dscard');
+  if (!state.ds){ el.innerHTML = '<span class="eyebrow">No data open</span><span class="mono">Open a file or a sample</span>'; return; }
+  el.innerHTML = `<span class="eyebrow">Open dataset</span><b>${esc(state.ds.name)}</b><span class="mono">${fmtInt(state.ds.n)} rows × ${state.ds.cols.length} cols</span><a href="#open">Open something else →</a>`;
+}
+
+
+/* ================= LANDING ================= */
+const UNSPLASH = id => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=75&w=`;
+const PHOTOS = {
+  hero:   { id:'1782067170988-e9eaa2bf6636', w:1400, by:'Rafael Peier', alt:'Terraced marble quarry seen from above, with cut stone blocks on each level' },
+  strata: { id:'1755448865273-868d501d00e6', w:1200, by:'Viktoriia Nechepurenko', alt:'Close-up of layered rock in warm brown and grey bands' },
+  heart:  { id:'1758691462123-8a17ae95d203', w:900, by:'Vitaly Gariev', alt:'Doctor checking a patient’s blood pressure with a stethoscope' },
+  coffee: { id:'1790156591511-c15ce9fe9ebc', w:900, by:'Ceba Solutions', alt:'Barista working behind a tiled coffee bar' },
+  students:{ id:'1741699428220-65f37f3fbbcb', w:900, by:'Zoshua Colah', alt:'Student studying at a library table surrounded by books' }
+};
+function photo(key, cls = '', extra = '', credit = true){
+  const p = PHOTOS[key], tag = credit ? 'figure' : 'span';
+  return `<${tag} class="photo ${cls}" style="margin:0;display:block">${extra}<img src="${UNSPLASH(p.id)}${p.w}" alt="${esc(p.alt)}" loading="${key === 'hero' ? 'eager' : 'lazy'}" decoding="async">${credit ? `<a class="pcredit" href="https://unsplash.com" target="_blank" rel="noopener" data-by="${esc(p.by)}">Photo · ${esc(p.by)}</a>` : ''}</${tag}>`;
+}
+function guardPhotos(root){
+  $$('.photo img', root).forEach(img => {
+    const fail = () => img.closest('.photo').classList.add('noimg');
+    img.addEventListener('error', fail);
+    if (img.complete && !img.naturalWidth) fail();
+  });
+  $$('.pcredit', root).forEach(a => { a.href = 'https://unsplash.com/s/users/' + encodeURIComponent(a.dataset.by); });
+}
+let homeBuilt = false;
+function renderHome(){
+  if (homeBuilt) return;
+  homeBuilt = true;
+  const L = $('#landing');
+  L.innerHTML = `
+  <header class="lnav" id="lnav"><div class="lw">
+    <a class="lbrand" href="#home" aria-label="Quarry"><svg aria-hidden="true"><use href="#logo"/></svg>Quarry</a>
+    <nav class="llinks" aria-label="Page">
+      <button class="lk hide-sm" type="button" data-go="how">How it works</button>
+      <button class="lk hide-sm" type="button" data-go="craft">Engineering</button>
+      <button class="lk hide-sm" type="button" data-go="samples">Samples</button>
+      <button class="lk ic" type="button" data-theme-btn><svg aria-hidden="true"><use href="#i-auto"/></svg></button>
+      <a class="btn primary" href="#overview" style="margin-left:6px">Open Quarry</a>
+    </nav>
+  </div></header>
+
+  <section class="lw hero2">
+    <div>
+      <span class="eyebrow">In-browser data analysis</span>
+      <h1>Every spreadsheet is a <span class="hmark">quarry.</span></h1>
+      <p class="lede">Drop in a CSV and Quarry cuts through it one layer at a time. It profiles every column, answers questions in SQL, draws the right chart and trains a model while you watch. It all runs in your browser, so your data never leaves your hands.</p>
+      <div class="cta-row">
+        <a class="btn primary lg" href="#overview">Open Quarry</a>
+        <button class="btn lg" type="button" data-sample="heart">Try it on heart-health data</button>
+      </div>
+      <div class="proof">
+        <div><b>0</b>servers</div>
+        <div><b>0</b>libraries</div>
+        <div><b>1</b>HTML file</div>
+        <div><b>&lt;0.1 s</b>to profile 1,200 rows</div>
+      </div>
+    </div>
+    ${photo('hero', 'hero-photo', `<div class="core" style="z-index:2"><span class="eyebrow">Core sample · heart_health.csv</span>
+      <div class="plan"><span class="st">Scan <b>1,200</b></span><span class="arr">→</span><span class="st">Filter <b>11</b></span><span class="arr">→</span><span class="st"><b>1.5</b> ms</span></div>
+      <p>Strongest link found: <b>age</b> and <b>systolic_bp</b>, r = 0.51</p></div>`)}
+  </section>
+
+  <section class="strata" id="how">
+    <div class="lw shead"><div><span class="eyebrow">How it works</span><h2>Four layers down to an answer.</h2></div>
+      <p>A quarry is worked from the surface down, one bench at a time. Quarry treats your data the same way.</p></div>
+    <div class="layers">
+      <div class="layer l1"><div class="lw">
+        <div class="depth"><b>0 m</b>SURFACE</div>
+        <div><h3>Drop the file</h3><p>A hand-written parser handles quoted fields, embedded line breaks and four kinds of delimiter, then infers every column's type on a background thread.</p></div>
+        <div class="artefact"><i>file</i>      heart_health.csv · 72 KB
+<i>delimiter</i> <em>comma</em> (detected)
+<i>columns</i>   12 · 5 numeric · 4 category
+<i>parsed</i>    31 ms on a Web Worker</div>
+      </div></div>
+      <div class="layer l2"><div class="lw">
+        <div class="depth"><b>−6 m</b>PROFILE</div>
+        <div><h3>See every column</h3><p>Distributions, missing values, outliers and correlations, then a plain-English write-up of what stands out, so you know where to dig.</p></div>
+        <div class="artefact"><em>r = 0.51</em>  age ↔ systolic_bp
+<em>3.4%</em>      of bmi is missing
+<em>0</em>         duplicate rows
+<i>patient_id looks like an identifier</i></div>
+      </div></div>
+      <div class="layer l3"><div class="lw">
+        <div class="depth"><b>−14 m</b>QUERY</div>
+        <div><h3>Ask it in SQL</h3><p>A query engine written from scratch, with grouping, CASE, LIKE, dates and aggregates. Every result shows its plan, and errors point at the exact character.</p></div>
+        <div class="artefact"><em>SELECT</em> district,
+  ROUND(AVG(risk = 'high') * 100, 1) <em>AS</em> pct
+<em>FROM</em> data <em>GROUP BY</em> district
+<i>Scan 1,200 → Group 7 → Sort 7 · 2.4 ms</i></div>
+      </div></div>
+      <div class="layer l4"><div class="lw">
+        <div class="depth"><b>−23 m</b>MODEL</div>
+        <div><h3>Predict what comes next</h3><p>Classification and regression written without ML libraries, trained live with Adam and scored on rows the model never saw, against an honest baseline.</p></div>
+        <div class="artefact"><i>accuracy</i>  <em>77.1%</em>  on 240 unseen rows
+<i>baseline</i>  69.6%  (always "low")
+<i>ROC AUC</i>   <em>0.821</em>
+<i>top driver</i> smoker, then systolic_bp</div>
+      </div></div>
+      <div class="layer l5"><div class="lw">
+        <svg class="gem" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6l20 20-20 32-20-32z" fill="#A44200"/><path d="M32 6l20 20H12z" fill="#FFF94F"/><path d="M32 26l20 0-20 32z" fill="#69140E" opacity=".55"/></svg>
+        <div><h3>Your data never leaves the ground.</h3><p>There is no upload, no account and no server to send anything to. Close the tab and it is gone.</p></div>
+        <div class="artefact"><i>network requests made with your data</i>
+<em>0</em></div>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="lw craft" id="craft">
+    ${photo('strata', '')}
+    <div>
+      <span class="eyebrow">Engineering</span>
+      <h2 style="font-size:clamp(30px,4.2vw,52px);font-weight:800;letter-spacing:-.045em;line-height:1;margin-top:12px">Cut by hand, not assembled from parts.</h2>
+      <p style="color:var(--ink-2);font-size:16.5px;margin:18px 0 0;max-width:52ch">Parser, query engine, charts and models are all written for Quarry. That keeps it small, fast and easy to reason about, and every number on screen can be traced back to code you can read.</p>
+      <div class="facts">
+        <div><b>RFC 4180</b><span>CSV parsing, with delimiter detection</span></div>
+        <div><b>AST</b><span>recursive-descent SQL parser and executor</span></div>
+        <div><b>Adam</b><span>optimiser for softmax and linear models</span></div>
+        <div><b>SVG</b><span>every chart drawn by hand, light and dark</span></div>
+      </div>
+      <div class="code"><span class="c">-- runs on Quarry's own engine</span>
+<span class="k">SELECT</span> smoker, activity_level,
+       <span class="k">COUNT</span>(*) <span class="k">AS</span> n,
+       <span class="k">ROUND</span>(<span class="k">AVG</span>(risk = <span class="s">'high'</span>) * 100, 1) <span class="k">AS</span> pct_high
+<span class="k">FROM</span> data
+<span class="k">GROUP BY</span> smoker, activity_level
+<span class="k">ORDER BY</span> pct_high <span class="k">DESC</span></div>
+    </div>
+  </section>
+
+  <section class="lw lsamples" id="samples">
+    <div class="shead"><div><span class="eyebrow">Sample datasets</span><h2>Start digging right away.</h2></div>
+      <p>Three synthetic datasets, generated in your browser, each built to show off a different layer.</p></div>
+    <div class="scards">
+      ${Object.entries(SAMPLES).map(([id, s]) => `<button class="card scard" type="button" data-sample="${id}">
+        ${photo(id, '', '', false)}
+        <span class="body"><span class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${s.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</span>
+        <h3>${esc(s.title)}</h3><p>${esc(s.desc)}</p><span class="go">Open this dataset →</span></span>
+      </button>`).join('')}
+    </div>
+  </section>
+
+  <section class="lw"><div class="bring">
+    <div><span class="eyebrow" style="color:#C9A196">Your turn</span><h2 style="margin-top:12px">Bring your own rock.</h2>
+      <p>Any CSV up to about 50 MB: survey results, sales exports, lab readings. It is read on your machine and nowhere else.</p></div>
+    <div class="bdrop" id="hdrop">
+      <svg aria-hidden="true"><use href="#i-upload"/></svg>
+      <b>Drop a CSV here</b><span>or</span>
+      <div class="cta-row" style="justify-content:center">
+        <label class="btn canary" for="hfile" style="cursor:pointer">Choose a file<input id="hfile" type="file" accept=".csv,.tsv,.txt,text/csv" hidden></label>
+        <a class="btn outline-light" href="#overview">Explore a sample</a>
+      </div>
+    </div>
+  </div></section>
+
+  <footer class="lfoot"><div class="lw">
+    <div><a class="lbrand" href="#home" style="font-size:20px"><svg aria-hidden="true" style="width:26px;height:26px"><use href="#logo"/></svg>Quarry</a>
+      <p>MIT licensed. Source on <a href="https://github.com/sjamillah/quarry" target="_blank" rel="noopener">GitHub</a>.</p></div>
+    <p>Photography from <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> by ${Object.values(PHOTOS).map(p => esc(p.by)).join(', ')}. Sample datasets are synthetic.</p>
+  </div></footer>`;
+  guardPhotos(L);
+  applyTheme();
+  $$('[data-theme-btn]', L).forEach(b => b.addEventListener('click', cycleTheme));
+  $$('[data-go]', L).forEach(b => b.addEventListener('click', () => $('#' + b.dataset.go).scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })));
+  $$('[data-sample]', L).forEach(b => b.addEventListener('click', () => loadSample(b.dataset.sample)));
+  const nav = $('#lnav');
+  addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 8), { passive: true });
+  const drop = $('#hdrop');
+  ['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => openFile(e.dataTransfer.files[0]));
+  $('#hfile').addEventListener('change', e => openFile(e.target.files[0]));
+}
+
+/* ================= OPEN ================= */
+function renderOpen(){
+  $('#view').innerHTML = `
+    <section class="hero">
+      <div>
+        <span class="eyebrow">In-browser data analysis</span>
+        <h1 style="margin-top:10px">Drop in a spreadsheet. <em>Get answers.</em></h1>
+        <p>Quarry profiles every column, writes up what stands out, runs SQL on its own query engine, draws charts and trains a prediction model. Your data never leaves this tab.</p>
+      </div>
+      <div class="drop" id="drop">
+        ${state.loading ? '<div class="loading" style="padding:30px"><span class="spin"></span>Parsing and profiling on a background thread…</div>' : `
+        <svg class="big" aria-hidden="true"><use href="#i-upload"/></svg>
+        <b>Drop a CSV file here</b>
+        <span class="muted">Comma, semicolon, tab or pipe separated. Up to about 50 MB.</span>
+        <div class="row">
+          <label class="btn primary" for="file" style="cursor:pointer">Choose a file<input id="file" type="file" accept=".csv,.tsv,.txt,text/csv" hidden></label>
+          <button class="btn" id="pasteToggle" type="button">Paste data</button>
+        </div>
+        <div id="pasteBox" hidden style="width:100%;display:flex;flex-direction:column;gap:8px">
+          <textarea class="paste" id="pasteArea" placeholder="name,score&#10;Aline,82&#10;Eric,74" aria-label="Paste CSV data"></textarea>
+          <button class="btn primary" id="pasteGo" type="button">Analyse pasted data</button>
+        </div>`}
+        ${state.loadError ? `<div class="err"><b>That file couldn't be opened.</b> ${esc(state.loadError)}</div>` : ''}
+      </div>
+    </section>
+    <div class="vhead" style="margin-bottom:14px"><div><span class="eyebrow">No file handy?</span><h2 style="font-size:22px;margin-top:6px">Start with a sample dataset</h2></div></div>
+    <div class="samples">
+      ${Object.entries(SAMPLES).map(([id, s]) => `<button class="card sample" data-s="${id}" type="button">
+        <h3>${esc(s.title)}</h3><p>${esc(s.desc)}</p>
+        <span class="meta">${s.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}${state.sampleId === id && state.ds ? '<span class="chip" style="background:var(--accent-soft);color:var(--accent)">Open now</span>' : ''}</span>
+      </button>`).join('')}
+    </div>
+    <div class="vhead" style="margin-bottom:14px"><div><span class="eyebrow">Under the hood</span><h2 style="font-size:22px;margin-top:6px">Built from first principles</h2></div></div>
+    <div class="built">
+      <div class="card"><svg aria-hidden="true"><use href="#i-cpu"/></svg><h3>Background parsing</h3><p>A hand-written RFC 4180 CSV parser detects the delimiter and infers types on a Web Worker, so the page stays responsive.</p></div>
+      <div class="card"><svg aria-hidden="true"><use href="#i-sql"/></svg><h3>Own SQL engine</h3><p>Tokenizer, recursive-descent parser and executor with filters, grouping, aggregates, sorting and a visible query plan.</p></div>
+      <div class="card"><svg aria-hidden="true"><use href="#i-brain"/></svg><h3>Models trained live</h3><p>Softmax and linear regression with Adam, written without ML libraries. Scored on a held-out test set against a baseline.</p></div>
+      <div class="card"><svg aria-hidden="true"><use href="#i-lock"/></svg><h3>Private by design</h3><p>No server, no account, no uploads. Everything runs in your browser and disappears when you close the tab.</p></div>
+    </div>`;
+  $$('.sample').forEach(b => b.addEventListener('click', () => loadSample(b.dataset.s)));
+  if (state.loading) return;
+  const drop = $('#drop');
+  const readFile = openFile;
+  $('#file').addEventListener('change', e => readFile(e.target.files[0]));
+  ['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => readFile(e.dataTransfer.files[0]));
+  $('#pasteToggle').addEventListener('click', () => { $('#pasteBox').hidden = !$('#pasteBox').hidden; $('#pasteArea').focus(); });
+  $('#pasteGo').addEventListener('click', () => { const t = $('#pasteArea').value; if (t.trim()) loadText(t, 'Pasted data', 'Pasted from clipboard'); });
+}
+
+/* ================= OVERVIEW ================= */
+function findings(){
+  const { ds, prof } = state, out = [];
+  const corrs = [];
+  prof.corrCols.forEach((a, i) => prof.corrCols.forEach((b, j) => { if (j > i && prof.corr[i][j] !== null) corrs.push([a, b, prof.corr[i][j]]); }));
+  corrs.sort((x, y) => Math.abs(y[2]) - Math.abs(x[2]));
+  corrs.filter(c => Math.abs(c[2]) >= .3).slice(0, 3).forEach(([a, b, r]) => out.push({ k: 'info', i: 'r', t: `${cref(a)} and ${cref(b)} move ${r > 0 ? 'together' : 'in opposite directions'} (r = ${r.toFixed(2)}, ${Math.abs(r) >= .6 ? 'strong' : 'moderate'}).` }));
+  // categorical target hints: numeric means that differ most across a binary column
+  ds.cols.forEach((c, ci) => {
+    const p = prof.cols[ci];
+    if (!(c.type === 'boolean' || c.type === 'category') || p.unique !== 2) return;
+    const [l1, l2] = p.top.map(t => t[0]); let best = null;
+    ds.cols.forEach((nc, ni) => {
+      if (!isNumT(nc.type) || prof.cols[ni].isId || !prof.cols[ni].sd) return;
+      let s1 = 0, n1 = 0, s2 = 0, n2 = 0;
+      for (let r = 0; r < ds.n; r++){ const v = nc.values[r], g = c.values[r]; if (v === null) continue; if (g === l1){ s1 += v; n1++; } else if (g === l2){ s2 += v; n2++; } }
+      if (n1 < 10 || n2 < 10) return;
+      const d = (s1 / n1 - s2 / n2) / prof.cols[ni].sd;
+      if (!best || Math.abs(d) > Math.abs(best.d)) best = { d, col: nc.name, m1: s1 / n1, m2: s2 / n2 };
+    });
+    if (best && Math.abs(best.d) > .5) out.push({ k: 'info', i: '≠', t: `Rows where ${cref(c.name)} is <b>${esc(l1)}</b> average ${fmtNum(best.m1)} for ${cref(best.col)}, against ${fmtNum(best.m2)} when it is <b>${esc(l2)}</b>.` });
+  });
+  prof.cols.forEach(p => {
+    const pct = p.missing / ds.n * 100;
+    if (pct >= 1) out.push({ k: 'warn', i: '!', t: `${cref(p.name)} is missing ${pct.toFixed(1)}% of values (${fmtInt(p.missing)} rows). Quarry fills these with the median when training.` });
+  });
+  prof.cols.forEach(p => {
+    if (p.type !== 'date' && p.outliers && p.outliers / p.count > .005) out.push({ k: 'warn', i: '↕', t: `${cref(p.name)} has ${fmtInt(p.outliers)} outliers outside ${fmtNum(p.outLo)} to ${fmtNum(p.outHi)} (1.5 × IQR rule).` });
+  });
+  prof.cols.forEach(p => { if (isNumT(p.type) && !p.isId && Math.abs(p.skew) > 1) out.push({ k: 'info', i: '~', t: `${cref(p.name)} is ${p.skew > 0 ? 'right' : 'left'}-skewed (skew ${p.skew.toFixed(2)}). The median (${fmtNum(p.median)}) describes it better than the mean (${fmtNum(p.mean)}).` }); });
+  prof.cols.forEach(p => { if (p.top && p.unique > 2 && p.topShare > .5 && !p.isId) out.push({ k: 'info', i: '%', t: `<b>${esc(p.top[0][0])}</b> makes up ${(p.topShare * 100).toFixed(0)}% of ${cref(p.name)}.` }); });
+  prof.cols.forEach(p => { if (p.isId) out.push({ k: 'good', i: '#', t: `${cref(p.name)} is unique on every row, so it looks like an identifier. Quarry leaves it out of models.` }); });
+  if (prof.duplicates) out.push({ k: 'warn', i: '=', t: `${fmtInt(prof.duplicates)} rows are exact duplicates of an earlier row.` });
+  else out.push({ k: 'good', i: '✓', t: 'No duplicate rows.' });
+  return out;
+}
+const cref = name => `<a class="colref" href="#columns" data-col="${esc(name)}">${esc(name)}</a>`;
+function bindColrefs(root = document){
+  $$('.colref', root).forEach(a => a.addEventListener('click', e => { e.preventDefault(); state.focusCol = a.dataset.col; location.hash = 'columns'; }));
+}
+function renderOverview(){
+  const { ds, prof } = state;
+  const cells = ds.n * ds.cols.length, miss = prof.cols.reduce((s, p) => s + p.missing, 0);
+  const types = {}; prof.cols.forEach(p => { const t = isNumT(p.type) ? 'numeric' : p.type; types[t] = (types[t] || 0) + 1; });
+  const F = findings();
+  $('#view').innerHTML = `
+    <header class="vhead"><div><span class="eyebrow">${esc(state.source || '')}</span><h1>${esc(ds.name)}</h1>
+      <p>Parsed and profiled in ${state.totalMs} ms ${state.onWorker ? 'on a background thread' : 'in this tab'}. Delimiter detected: ${({ ',':'comma', ';':'semicolon', '\t':'tab', '|':'pipe' })[ds.delimiter]}.</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#query">Query with SQL</a><a class="btn primary" href="#predict">Train a model</a></div></header>
+    <div class="kpis">
+      <div class="card kpi"><span class="eyebrow">Rows</span><b class="num">${fmtInt(ds.n)}</b><small>${(state.bytes / 1024).toFixed(0)} KB of text</small></div>
+      <div class="card kpi"><span class="eyebrow">Columns</span><b class="num">${ds.cols.length}</b><small>${Object.entries(types).map(([t, c]) => `${c} ${t}`).join(', ')}</small></div>
+      <div class="card kpi"><span class="eyebrow">Missing cells</span><b class="num">${(miss / cells * 100).toFixed(1)}%</b><small>${fmtInt(miss)} of ${fmtInt(cells)}</small></div>
+      <div class="card kpi"><span class="eyebrow">Duplicate rows</span><b class="num">${fmtInt(prof.duplicates)}</b><small>${prof.duplicates ? 'worth a look' : 'clean'}</small></div>
+      <div class="card kpi"><span class="eyebrow">Findings</span><b class="num">${F.length}</b><small>written up below</small></div>
+    </div>
+    <div class="grid2">
+      <div class="card panel"><h2>What stands out</h2><p class="hint">Generated from the profile. Click a column name to inspect it.</p><ul class="findings">${F.map(f => `<li class="${f.k}"><span class="ic">${f.i}</span><span>${f.t}</span></li>`).join('')}</ul></div>
+      <div class="card panel"><h2>Correlation matrix</h2><p class="hint">Pearson correlation between numeric columns. Orange moves together, blue moves apart.</p><div class="scroll-x">${corrMatrix()}</div></div>
+    </div>
+    <div class="card panel"><h2>Preview</h2><p class="hint">First 25 of ${fmtInt(ds.n)} rows.</p>
+      <div class="tbl">${tableHTML(ds.cols.map(c => ({ name: c.name, col: c })), Array.from({ length: Math.min(25, ds.n) }, (_, r) => ds.cols.map(c => c.values[r])))}</div></div>`;
+  bindColrefs();
+}
+function corrMatrix(){
+  const { prof } = state, names = prof.corrCols, k = names.length;
+  if (k < 2) return '<p class="muted">Needs at least two numeric columns.</p>';
+  const cs = 38, L = Math.min(130, 12 + Math.max(...names.map(n => n.length)) * 6.6), T = 8, W = L + k * cs + 70, H = T + k * cs + Math.min(110, 12 + Math.max(...names.map(n => n.length)) * 6.4);
+  let s = '';
+  for (let i = 0; i < k; i++) for (let j = 0; j < k; j++){
+    const r = prof.corr[i][j], x = L + j * cs, y = T + i * cs;
+    const col = r === null ? 'var(--sunk)' : `color-mix(in srgb, ${r >= 0 ? 'var(--c1)' : 'var(--c2)'} ${Math.round(Math.abs(r) * 85 + 4)}%, var(--surface))`;
+    s += `<rect x="${x}" y="${y}" width="${cs - 3}" height="${cs - 3}" rx="5" style="fill:${col}"><title>${esc(names[i])} × ${esc(names[j])}: ${r === null ? 'n/a' : r.toFixed(3)}</title></rect>`;
+    if (r !== null) s += `<text class="v" x="${x + (cs - 3) / 2}" y="${y + cs / 2 + 2}" text-anchor="middle" style="fill:${Math.abs(r) > .55 ? 'var(--surface)' : 'var(--ink-2)'}">${i === j ? '1' : r.toFixed(2).replace('0.', '.')}</text>`;
+  }
+  names.forEach((n, i) => {
+    const sn = n.length > 18 ? n.slice(0, 17) + '…' : n;
+    s += `<text class="lbl" x="${L - 8}" y="${T + i * cs + cs / 2 + 2}" text-anchor="end">${esc(sn)}</text>`;
+    s += `<text class="lbl" transform="translate(${L + i * cs + cs / 2 - 1},${T + k * cs + 6}) rotate(40)">${esc(sn)}</text>`;
+  });
+  return `<svg class="chart corr" viewBox="0 0 ${W} ${H}" width="${W}" style="max-width:100%;height:auto;display:block;min-width:${Math.min(W, 340)}px" role="img" aria-label="Correlation matrix">${s}</svg>`;
+}
+function tableHTML(heads, rows){
+  const numc = heads.map((h, i) => !(h.col && h.col.type === 'date') && rows.some(r => typeof r[i] === 'number') && rows.every(r => r[i] === null || r[i] === undefined || typeof r[i] === 'number'));
+  return `<table class="data"><thead><tr>${heads.map((h, i) => `<th${numc[i] ? ' style="text-align:right"' : ''}>${esc(h.name)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((v, i) => {
+    if (v === null || v === undefined) return '<td class="null">null</td>';
+    const num = typeof v === 'number' && !(heads[i].col && heads[i].col.type === 'date');
+    return `<td class="${num ? 'n' : ''}">${esc(fmtVal(v, heads[i].col))}</td>`;
+  }).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+/* ================= COLUMNS ================= */
+function renderColumns(){
+  const { ds, prof } = state;
+  $('#view').innerHTML = `
+    <header class="vhead"><div><span class="eyebrow">${ds.cols.length} columns</span><h1>Columns</h1><p>Inferred type, summary statistics and distribution for every column.</p></div>
+      <input class="inp" id="colQ" type="search" placeholder="Filter columns" aria-label="Filter columns" style="width:220px"></header>
+    <div class="colgrid" id="colgrid">${ds.cols.map((c, i) => colCard(c, prof.cols[i])).join('')}</div>`;
+  $('#colQ').addEventListener('input', e => { const q = e.target.value.toLowerCase(); $$('.col').forEach(el => el.hidden = !el.dataset.name.toLowerCase().includes(q)); });
+  if (state.focusCol){
+    const el = $(`.col[data-name="${CSS.escape(state.focusCol)}"]`); state.focusCol = null;
+    if (el) setTimeout(() => { el.scrollIntoView({ block: 'start' }); el.classList.add('flash'); }, 30);
+  }
+}
+function colCard(c, p){
+  const n = state.ds.n, miss = p.missing / n * 100;
+  let stats = '', viz = '';
+  const st = (k, v) => `<div><span>${k}</span><b title="${esc(v)}">${esc(v)}</b></div>`;
+  if (isNumT(c.type) || c.type === 'date'){
+    const f = v => c.type === 'date' ? fmtDate(v) : fmtNum(v);
+    stats = c.type === 'date'
+      ? st('From', f(p.min)) + st('To', f(p.max)) + st('Unique', fmtInt(p.unique)) + st('Missing', miss.toFixed(1) + '%')
+      : st('Mean', f(p.mean)) + st('Median', f(p.median)) + st('Std dev', fmtNum(p.sd)) + st('Missing', miss.toFixed(1) + '%') + st('Min', f(p.min)) + st('Q1', f(p.q1)) + st('Q3', f(p.q3)) + st('Max', f(p.max));
+    viz = histSVG(p, c);
+  } else {
+    stats = st('Unique', fmtInt(p.unique)) + st('Missing', miss.toFixed(1) + '%') + st('Most common', p.top[0] ? p.top[0][0] : '') + st(c.type === 'text' ? 'Avg length' : 'Top share', c.type === 'text' ? fmtNum(p.avgLen) + ' chars' : (p.topShare * 100).toFixed(0) + '%');
+    const max = p.top.length ? p.top[0][1] : 1;
+    viz = `<div class="topvals" style="--tc:var(--t-${c.type === 'boolean' ? 'bool' : c.type === 'text' ? 'text' : 'cat'})">${p.top.map(([v, k]) => `<div class="r"><span title="${esc(v)}">${esc(v)}</span><span class="track"><i style="width:${(k / max * 100).toFixed(1)}%"></i></span><span class="p">${(k / p.count * 100).toFixed(1)}%</span></div>`).join('')}${p.unique > 8 ? `<span class="muted" style="font-size:12px">+ ${fmtInt(p.unique - 8)} more values</span>` : ''}</div>`;
+  }
+  return `<article class="card col" data-name="${esc(c.name)}">
+    <div class="col-head"><h3>${esc(c.name)}</h3><span class="type ${c.type}">${c.type}</span>${p.isId ? '<span class="flag">identifier</span>' : ''}${p.outliers ? `<span class="flag">${fmtInt(p.outliers)} outliers</span>` : ''}</div>
+    <div class="statgrid">${stats}</div>${viz}</article>`;
+}
+function histSVG(p, c){
+  const h = p.hist, W = 420, H = 90, max = Math.max(...h, 1), bw = W / h.length;
+  const tc = c.type === 'date' ? 'var(--t-date)' : 'var(--t-num)';
+  const lab = v => c.type === 'date' ? fmtDate(v) : fmtNum(v);
+  return `<svg class="chart hist" viewBox="0 0 ${W} ${H + 16}" width="100%" style="--tc:${tc};display:block" role="img" aria-label="Distribution of ${esc(c.name)}">
+    ${h.map((v, i) => `<rect x="${(i * bw + 1).toFixed(1)}" y="${(H - v / max * H).toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${(v / max * H).toFixed(1)}" rx="2"><title>${lab(p.min + i * p.histStep)}${p.histStep === 1 && c.type === 'integer' ? '' : ' – ' + lab(p.min + (i + 1) * p.histStep)}: ${fmtInt(v)} rows</title></rect>`).join('')}
+    <text x="0" y="${H + 13}">${esc(lab(p.min))}</text><text x="${W}" y="${H + 13}" text-anchor="end">${esc(lab(p.max))}</text></svg>`;
+}
+
+/* ================= SQL ENGINE ================= */
+const KW = new Set(['SELECT','DISTINCT','FROM','WHERE','GROUP','BY','HAVING','ORDER','ASC','DESC','LIMIT','AND','OR','NOT','AS','LIKE','IN','BETWEEN','IS','NULL','TRUE','FALSE','CASE','WHEN','THEN','ELSE','END']);
+const AGG = new Set(['COUNT','SUM','AVG','MIN','MAX','MEDIAN']);
+const FNS = { ROUND:(x, d = 0) => x === null ? null : Math.round(x * 10 ** d) / 10 ** d, ABS: x => x === null ? null : Math.abs(x), LOWER: s => s === null ? null : String(s).toLowerCase(),
+  UPPER: s => s === null ? null : String(s).toUpperCase(), LENGTH: s => s === null ? null : String(s).length, COALESCE: (...a) => a.find(v => v !== null && v !== undefined) ?? null,
+  YEAR: d => d === null ? null : new Date(d).getUTCFullYear(), MONTH: d => d === null ? null : new Date(d).getUTCMonth() + 1, DAY: d => d === null ? null : new Date(d).getUTCDate(),
+  WEEKDAY: d => d === null ? null : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d).getUTCDay()], FLOOR: x => x === null ? null : Math.floor(x), CEIL: x => x === null ? null : Math.ceil(x) };
+class SQLError extends Error { constructor(msg, pos){ super(msg); this.pos = pos; } }
+function lex(src){
+  const toks = []; let i = 0;
+  while (i < src.length){
+    const c = src[i];
+    if (/\s/.test(c)){ i++; continue; }
+    if (c === '-' && src[i+1] === '-'){ while (i < src.length && src[i] !== '\n') i++; continue; }
+    const start = i;
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i+1]))){ while (/[0-9.]/.test(src[i] || '')) i++; if (/[eE]/.test(src[i] || '')){ i++; if (/[+-]/.test(src[i])) i++; while (/[0-9]/.test(src[i] || '')) i++; } toks.push({ t:'num', v: +src.slice(start, i), p: start }); continue; }
+    if (c === "'"){ let s = ''; i++; while (i < src.length){ if (src[i] === "'"){ if (src[i+1] === "'"){ s += "'"; i += 2; continue; } break; } s += src[i++]; } if (src[i] !== "'") throw new SQLError('This text value is missing its closing quote.', start); i++; toks.push({ t:'str', v: s, p: start }); continue; }
+    if (c === '"' || c === '`' || c === '['){ const close = c === '[' ? ']' : c; i++; let s = ''; while (i < src.length && src[i] !== close) s += src[i++]; if (src[i] !== close) throw new SQLError('This quoted column name is missing its closing ' + close + '.', start); i++; toks.push({ t:'id', v: s, p: start }); continue; }
+    if (/[A-Za-z_]/.test(c)){ while (/[A-Za-z0-9_]/.test(src[i] || '')) i++; const w = src.slice(start, i), U = w.toUpperCase(); toks.push(KW.has(U) ? { t:'kw', v: U, p: start } : { t:'id', v: w, p: start }); continue; }
+    const two = src.slice(i, i + 2);
+    if (['<=','>=','<>','!=','||'].includes(two)){ toks.push({ t:'op', v: two === '<>' ? '!=' : two, p: start }); i += 2; continue; }
+    if ('=<>+-*/%(),;'.includes(c)){ toks.push({ t:'op', v: c, p: start }); i++; continue; }
+    throw new SQLError(`Unexpected character "${c}".`, start);
+  }
+  toks.push({ t:'eof', v:'', p: src.length });
+  return toks;
+}
+function parseSQL(src){
+  const T = lex(src); let k = 0;
+  const peek = () => T[k], next = () => T[k++];
+  const isKw = v => T[k].t === 'kw' && T[k].v === v, isOp = v => T[k].t === 'op' && T[k].v === v;
+  const expectKw = v => { if (!isKw(v)) throw new SQLError(`Expected ${v} here.`, T[k].p); return next(); };
+  const expectOp = v => { if (!isOp(v)) throw new SQLError(`Expected "${v}" here.`, T[k].p); return next(); };
+  function primary(){
+    const t = peek();
+    if (t.t === 'num'){ next(); return { t:'lit', v: t.v }; }
+    if (t.t === 'str'){ next(); return { t:'lit', v: t.v }; }
+    if (t.t === 'kw' && t.v === 'NULL'){ next(); return { t:'lit', v: null }; }
+    if (t.t === 'kw' && (t.v === 'TRUE' || t.v === 'FALSE')){ next(); return { t:'lit', v: t.v === 'TRUE' }; }
+    if (t.t === 'kw' && t.v === 'CASE'){
+      next(); const whens = [];
+      while (isKw('WHEN')){ next(); const c = expr(); expectKw('THEN'); whens.push([c, expr()]); }
+      if (!whens.length) throw new SQLError('CASE needs at least one WHEN … THEN.', T[k].p);
+      let els = null; if (isKw('ELSE')){ next(); els = expr(); }
+      expectKw('END'); return { t:'case', whens, els };
+    }
+    if (isOp('(')){ next(); const e = expr(); expectOp(')'); return e; }
+    if (isOp('*')){ next(); return { t:'star', p: t.p }; }
+    if (t.t === 'id'){
+      next();
+      if (isOp('(')){
+        next(); const F = t.v.toUpperCase();
+        if (AGG.has(F)){
+          let distinct = false; if (isKw('DISTINCT')){ next(); distinct = true; }
+          let arg; if (isOp('*')){ next(); arg = { t:'star' }; if (F !== 'COUNT') throw new SQLError(`${F}(*) isn't valid. Use COUNT(*) or ${F}(column).`, t.p); } else arg = expr();
+          expectOp(')'); return { t:'agg', f: F, arg, distinct, p: t.p };
+        }
+        if (!FNS[F]) throw new SQLError(`Unknown function ${F}(). Available: ${[...AGG, ...Object.keys(FNS)].join(', ')}.`, t.p);
+        const args = []; if (!isOp(')')){ args.push(expr()); while (isOp(',')){ next(); args.push(expr()); } }
+        expectOp(')'); return { t:'fn', f: F, args, p: t.p };
+      }
+      return { t:'id', name: t.v, key: t.v.toLowerCase(), p: t.p };
+    }
+    throw new SQLError(t.t === 'eof' ? 'The query ends too early.' : `Unexpected "${t.v}".`, t.p);
+  }
+  function unary(){ if (isOp('-')){ next(); return { t:'neg', e: unary() }; } return primary(); }
+  function mul(){ let l = unary(); while (isOp('*') || isOp('/') || isOp('%')){ const o = next().v; l = { t:'bin', o, l, r: unary() }; } return l; }
+  function add(){ let l = mul(); while (isOp('+') || isOp('-') || isOp('||')){ const o = next().v; l = { t:'bin', o, l, r: mul() }; } return l; }
+  function cmp(){
+    const l = add();
+    if (['=','!=','<','<=','>','>='].some(isOp)){ const o = next().v; return { t:'bin', o, l, r: add() }; }
+    let not = false; if (isKw('NOT') && T[k+1].t === 'kw' && ['LIKE','IN','BETWEEN'].includes(T[k+1].v)){ next(); not = true; }
+    if (isKw('LIKE')){ next(); return { t:'like', l, r: add(), not }; }
+    if (isKw('IN')){ next(); expectOp('('); const list = [expr()]; while (isOp(',')){ next(); list.push(expr()); } expectOp(')'); return { t:'in', l, list, not }; }
+    if (isKw('BETWEEN')){ next(); const a = add(); expectKw('AND'); return { t:'between', l, a, b: add(), not }; }
+    if (isKw('IS')){ next(); let n = false; if (isKw('NOT')){ next(); n = true; } expectKw('NULL'); return { t:'isnull', l, not: n }; }
+    return l;
+  }
+  function notE(){ if (isKw('NOT')){ next(); return { t:'not', e: notE() }; } return cmp(); }
+  function andE(){ let l = notE(); while (isKw('AND')){ next(); l = { t:'bin', o:'AND', l, r: notE() }; } return l; }
+  function expr(){ let l = andE(); while (isKw('OR')){ next(); l = { t:'bin', o:'OR', l, r: andE() }; } return l; }
+  const q = { cols: [], where: null, group: [], having: null, order: [], limit: null, distinct: false };
+  expectKw('SELECT');
+  if (isKw('DISTINCT')){ next(); q.distinct = true; }
+  do {
+    if (q.cols.length) next();
+    const p = peek().p, e = expr(); let alias = null;
+    if (isKw('AS')){ next(); const a = next(); if (a.t !== 'id' && a.t !== 'str') throw new SQLError('Expected a name after AS.', a.p); alias = a.v; }
+    else if (peek().t === 'id'){ alias = next().v; }
+    q.cols.push({ e, alias, text: src.slice(p, peek().p).trim().replace(/\s+as\s+.*$/i, '') });
+  } while (isOp(','));
+  expectKw('FROM');
+  const from = next(); if (from.t !== 'id') throw new SQLError('Expected a table name after FROM. Your dataset is called "data".', from.p);
+  if (isKw('WHERE')){ next(); q.where = expr(); }
+  if (isKw('GROUP')){ next(); expectKw('BY'); q.group.push(expr()); while (isOp(',')){ next(); q.group.push(expr()); } }
+  if (isKw('HAVING')){ next(); q.having = expr(); }
+  if (isKw('ORDER')){ next(); expectKw('BY'); do { if (q.order.length) next(); const e = expr(); let desc = false; if (isKw('ASC')) next(); else if (isKw('DESC')){ next(); desc = true; } q.order.push({ e, desc }); } while (isOp(',')); }
+  if (isKw('LIMIT')){ next(); const n = next(); if (n.t !== 'num') throw new SQLError('LIMIT needs a number.', n.p); q.limit = Math.max(0, Math.floor(n.v)); }
+  if (isOp(';')) next();
+  if (peek().t !== 'eof') throw new SQLError(`Unexpected "${peek().v}" after the end of the query.`, peek().p);
+  return q;
+}
+function lev(a, b){ const m = a.length, n = b.length, d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return d[m][n]; }
+const hasAgg = e => !e ? false : e.t === 'agg' ? true : ['bin'].includes(e.t) ? hasAgg(e.l) || hasAgg(e.r) : e.t === 'neg' || e.t === 'not' ? hasAgg(e.e) : e.t === 'fn' ? e.args.some(hasAgg) : e.t === 'like' || e.t === 'isnull' ? hasAgg(e.l) || hasAgg(e.r) : e.t === 'in' ? hasAgg(e.l) || e.list.some(hasAgg) : e.t === 'between' ? hasAgg(e.l) || hasAgg(e.a) || hasAgg(e.b) : e.t === 'case' ? e.whens.some(([a, b]) => hasAgg(a) || hasAgg(b)) || hasAgg(e.els) : false;
+function execSQL(src){
+  const { ds } = state, cmap = state.colMap, t0 = performance.now();
+  const q = parseSQL(src);
+  const DATE_LIT = /^\d{4}-\d{1,2}-\d{1,2}/;
+  const coerce = (a, b) => (typeof a === 'number' && typeof b === 'string' && DATE_LIT.test(b)) ? [a, Core.parseDate(b.length === 10 ? b : b.replace(' ', 'T').slice(0, 10)) ?? b] : (typeof b === 'number' && typeof a === 'string' && DATE_LIT.test(a)) ? [Core.parseDate(a.slice(0, 10)) ?? a, b] : [a, b];
+  const truthy = v => v !== null && v !== false && v !== 0 && v !== undefined;
+  const num = v => typeof v === 'boolean' ? +v : v;
+  function col(node){
+    const c = cmap.get(node.key);
+    if (!c){
+      const best = ds.cols.map(c => [c.name, lev(node.key, c.key)]).sort((a, b) => a[1] - b[1])[0];
+      throw new SQLError(`There is no column called "${node.name}".${best && best[1] <= Math.max(2, node.key.length / 3) ? ` Did you mean "${best[0]}"?` : ''}`, node.p);
+    }
+    return c;
+  }
+  function ev(e, ctx){
+    switch (e.t){
+      case 'lit': return e.v;
+      case 'id': if (ctx.alias && ctx.alias.has(e.key) && !cmap.has(e.key)) return ctx.alias.get(e.key); if (ctx.alias && ctx.alias.has(e.key) && ctx.preferAlias) return ctx.alias.get(e.key); return col(e).values[ctx.row ?? ctx.group[0]] ?? null;
+      case 'star': throw new SQLError('* can only be used on its own, as in SELECT * or COUNT(*).', e.p);
+      case 'neg': { const v = ev(e.e, ctx); return v === null ? null : -num(v); }
+      case 'not': { const v = ev(e.e, ctx); return v === null ? null : !truthy(v); }
+      case 'case': { for (const [c, r] of e.whens) if (truthy(ev(c, ctx))) return ev(r, ctx); return e.els ? ev(e.els, ctx) : null; }
+      case 'bin': {
+        if (e.o === 'AND'){ const l = ev(e.l, ctx); if (l !== null && !truthy(l)) return false; const r = ev(e.r, ctx); if (r !== null && !truthy(r)) return false; return l === null || r === null ? null : true; }
+        if (e.o === 'OR'){ const l = ev(e.l, ctx); if (truthy(l)) return true; const r = ev(e.r, ctx); if (truthy(r)) return true; return l === null || r === null ? null : false; }
+        let l = ev(e.l, ctx), r = ev(e.r, ctx);
+        if (l === null || r === null) return null;
+        if (e.o === '||') return String(l) + String(r);
+        [l, r] = coerce(l, r);
+        switch (e.o){
+          case '+': return num(l) + num(r); case '-': return num(l) - num(r); case '*': return num(l) * num(r);
+          case '/': return num(r) === 0 ? null : num(l) / num(r); case '%': return num(r) === 0 ? null : num(l) % num(r);
+          case '=': return typeof l === 'string' && typeof r === 'string' ? l.toLowerCase() === r.toLowerCase() : l == r;
+          case '!=': return typeof l === 'string' && typeof r === 'string' ? l.toLowerCase() !== r.toLowerCase() : l != r;
+          case '<': return l < r; case '<=': return l <= r; case '>': return l > r; case '>=': return l >= r;
+        }
+        return null;
+      }
+      case 'like': { const l = ev(e.l, ctx), r = ev(e.r, ctx); if (l === null || r === null) return null; const re = new RegExp('^' + String(r).replace(/[.+?^${}()|[\]\\*]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.') + '$', 'is'); return re.test(String(l)) !== e.not; }
+      case 'in': { const l = ev(e.l, ctx); if (l === null) return null; const hit = e.list.some(x => { let [a, b] = coerce(l, ev(x, ctx)); return typeof a === 'string' && typeof b === 'string' ? a.toLowerCase() === b.toLowerCase() : a == b; }); return hit !== e.not; }
+      case 'between': { let l = ev(e.l, ctx), a = ev(e.a, ctx), b = ev(e.b, ctx); if (l === null || a === null || b === null) return null; [l, a] = coerce(l, a); [l, b] = coerce(l, b); return (l >= a && l <= b) !== e.not; }
+      case 'isnull': { const v = ev(e.l, ctx); return (v === null || v === undefined) !== e.not; }
+      case 'fn': { const args = e.args.map(a => ev(a, ctx)); try { return FNS[e.f](...args.map(num)) ?? null; } catch(err){ return null; } }
+      case 'agg': {
+        if (!ctx.group) throw new SQLError(`${e.f}() can't be used in WHERE. Filter groups with HAVING instead.`, e.p);
+        if (e.arg.t === 'star') return ctx.group.length;
+        let vals = ctx.group.map(i => ev(e.arg, { row: i })).filter(v => v !== null && v !== undefined).map(num);
+        if (e.distinct) vals = [...new Set(vals)];
+        if (e.f === 'COUNT') return vals.length;
+        if (!vals.length) return null;
+        if (e.f === 'SUM') return vals.reduce((s, v) => s + v, 0);
+        if (e.f === 'AVG') return vals.reduce((s, v) => s + v, 0) / vals.length;
+        if (e.f === 'MIN') return vals.reduce((m, v) => v < m ? v : m);
+        if (e.f === 'MAX') return vals.reduce((m, v) => v > m ? v : m);
+        if (e.f === 'MEDIAN'){ const s = vals.slice().sort((a, b) => a - b), m = (s.length - 1) / 2; return (s[Math.floor(m)] + s[Math.ceil(m)]) / 2; }
+      }
+    }
+    return null;
+  }
+  const stages = [];
+  let rows = Array.from({ length: ds.n }, (_, i) => i);
+  stages.push(['Scan', rows.length]);
+  if (q.where){ if (hasAgg(q.where)) throw new SQLError('Aggregates like COUNT() belong in HAVING, not WHERE.', 0); rows = rows.filter(i => truthy(ev(q.where, { row: i }))); stages.push(['Filter', rows.length]); }
+  // expand SELECT *
+  let items = [];
+  q.cols.forEach(c => { if (c.e.t === 'star') ds.cols.forEach(dc => items.push({ e: { t:'id', name: dc.name, key: dc.key }, alias: null, text: dc.name })); else items.push(c); });
+  const outCol = it => { const e = it.e; if (e.t === 'id') return cmap.get(e.key) || null; if (e.t === 'agg' && (e.f === 'MIN' || e.f === 'MAX') && e.arg.t === 'id') return cmap.get(e.arg.key) || null; return null; };
+  // GROUP BY may name a SELECT alias or a 1-based position, as in most SQL dialects
+  q.group = q.group.map(g => {
+    if (g.t === 'lit' && typeof g.v === 'number'){ const it = items[g.v - 1]; if (!it) throw new SQLError(`GROUP BY ${g.v} points past the ${items.length} selected columns.`, 0); return it.e; }
+    if (g.t === 'id' && !cmap.has(g.key)){ const it = items.find(it => it.alias && it.alias.toLowerCase() === g.key); if (it){ if (hasAgg(it.e)) throw new SQLError(`"${it.alias}" is an aggregate, so it can't be grouped on.`, g.p); return it.e; } }
+    return g;
+  });
+  q.order = q.order.map(o => o.e.t === 'lit' && typeof o.e.v === 'number' && items[o.e.v - 1] ? { e: { t:'id', name: items[o.e.v - 1].alias || items[o.e.v - 1].text, key: (items[o.e.v - 1].alias || items[o.e.v - 1].text).toLowerCase() }, desc: o.desc } : o);
+  const grouped = q.group.length > 0 || items.some(it => hasAgg(it.e)) || hasAgg(q.having);
+  let out = [];
+  if (grouped){
+    const groups = new Map();
+    if (q.group.length){
+      rows.forEach(i => { const key = JSON.stringify(q.group.map(g => ev(g, { row: i }))); let g = groups.get(key); if (!g){ g = []; groups.set(key, g); } g.push(i); });
+    } else groups.set('all', rows);
+    stages.push(['Group', groups.size, 'groups']);
+    for (const g of groups.values()){
+      if (!g.length && q.group.length) continue;
+      const ctx = { group: g, alias: new Map() };
+      const vals = items.map(it => { const v = ev(it.e, ctx); ctx.alias.set((it.alias || it.text).toLowerCase(), v); return v; });
+      if (q.having && !truthy(ev(q.having, ctx))) continue;
+      out.push({ vals, ctx });
+    }
+    if (q.having) stages.push(['Having', out.length]);
+  } else {
+    out = rows.map(i => { const ctx = { row: i, alias: new Map() }; const vals = items.map(it => { const v = ev(it.e, ctx); ctx.alias.set((it.alias || it.text).toLowerCase(), v); return v; }); return { vals, ctx }; });
+  }
+  if (q.distinct){ const seen = new Set(); out = out.filter(r => { const k = JSON.stringify(r.vals); if (seen.has(k)) return false; seen.add(k); return true; }); stages.push(['Distinct', out.length]); }
+  if (q.order.length){
+    const keyed = out.map(r => ({ r, k: q.order.map(o => ev(o.e, Object.assign({}, r.ctx, { preferAlias: true }))) }));
+    keyed.sort((a, b) => { for (let i = 0; i < q.order.length; i++){ let x = a.k[i], y = b.k[i]; if (x === y) continue; if (x === null) return 1; if (y === null) return -1; if (typeof x === 'string' && typeof y === 'string'){ const c = x.localeCompare(y, undefined, { numeric: true }); if (c) return q.order[i].desc ? -c : c; continue; } const c = x < y ? -1 : 1; return q.order[i].desc ? -c : c; } return 0; });
+    out = keyed.map(x => x.r); stages.push(['Sort', out.length]);
+  }
+  if (q.limit !== null){ out = out.slice(0, q.limit); stages.push(['Limit', out.length]); }
+  const heads = items.map(it => ({ name: it.alias || it.text, col: outCol(it) }));
+  return { heads, rows: out.map(r => r.vals), stages, ms: performance.now() - t0 };
+}
+
+/* ================= QUERY VIEW ================= */
+function exampleQueries(){
+  const { ds, prof } = state;
+  if (state.sampleId === 'heart') return [
+    ['Risk by district', "SELECT district, COUNT(*) AS patients,\n  ROUND(AVG(risk = 'high') * 100, 1) AS pct_high_risk,\n  ROUND(AVG(systolic_bp), 1) AS avg_bp\nFROM data\nGROUP BY district\nORDER BY pct_high_risk DESC"],
+    ['Smokers vs non-smokers', "SELECT smoker, activity_level, COUNT(*) AS n,\n  ROUND(AVG(risk = 'high') * 100, 1) AS pct_high_risk\nFROM data\nGROUP BY smoker, activity_level\nORDER BY pct_high_risk DESC"],
+    ['Age bands', "SELECT CASE WHEN age < 35 THEN '18-34' WHEN age < 50 THEN '35-49'\n  WHEN age < 65 THEN '50-64' ELSE '65+' END AS age_band,\n  COUNT(*) AS patients, ROUND(AVG(cholesterol), 0) AS avg_chol\nFROM data\nGROUP BY age_band\nORDER BY age_band"],
+    ['Urgent follow-ups', "SELECT patient_id, age, systolic_bp, cholesterol, glucose\nFROM data\nWHERE systolic_bp >= 160 AND (glucose > 140 OR smoker = 'yes')\nORDER BY systolic_bp DESC\nLIMIT 20"]
+  ];
+  if (state.sampleId === 'coffee') return [
+    ['Revenue by branch', "SELECT branch, COUNT(*) AS orders,\n  SUM(total_rwf) AS revenue_rwf,\n  ROUND(AVG(total_rwf), 0) AS avg_ticket\nFROM data\nGROUP BY branch\nORDER BY revenue_rwf DESC"],
+    ['Busiest hours', "SELECT hour, COUNT(*) AS orders\nFROM data\nGROUP BY hour\nORDER BY hour"],
+    ['Monthly trend', "SELECT MONTH(order_date) AS month, SUM(total_rwf) AS revenue_rwf\nFROM data\nGROUP BY month\nORDER BY month"],
+    ['Hot-day drinks', "SELECT product, COUNT(*) AS orders\nFROM data\nWHERE temperature_c > 25\nGROUP BY product\nORDER BY orders DESC"]
+  ];
+  if (state.sampleId === 'students') return [
+    ['Scores by programme', "SELECT programme, COUNT(*) AS students,\n  ROUND(AVG(final_score), 1) AS avg_score,\n  MEDIAN(final_score) AS median_score\nFROM data\nGROUP BY programme\nORDER BY avg_score DESC"],
+    ['Sleep and scores', "SELECT ROUND(sleep_hours) AS sleep, COUNT(*) AS students,\n  ROUND(AVG(final_score), 1) AS avg_score\nFROM data\nGROUP BY sleep\nORDER BY sleep"],
+    ['Jobs and study time', "SELECT part_time_job, ROUND(AVG(study_hours_week), 1) AS study_hrs,\n  ROUND(AVG(final_score), 1) AS avg_score\nFROM data\nGROUP BY part_time_job"],
+    ['Top performers', "SELECT student_id, programme, final_score\nFROM data\nWHERE attendance_pct >= 90\nORDER BY final_score DESC\nLIMIT 10"]
+  ];
+  const q = c => /^[A-Za-z_][A-Za-z0-9_]*$/.test(c.name) ? c.name : `"${c.name}"`;
+  const cat = ds.cols.find((c, i) => (c.type === 'category' || c.type === 'boolean') && !prof.cols[i].isId);
+  const nm = ds.cols.find((c, i) => isNumT(c.type) && !prof.cols[i].isId);
+  const ex = [['First rows', 'SELECT *\nFROM data\nLIMIT 50']];
+  if (cat) ex.push(['Count by ' + cat.name, `SELECT ${q(cat)}, COUNT(*) AS n\nFROM data\nGROUP BY ${q(cat)}\nORDER BY n DESC`]);
+  if (cat && nm) ex.push([`Average ${nm.name}`, `SELECT ${q(cat)}, ROUND(AVG(${q(nm)}), 2) AS avg_${nm.key.replace(/\W+/g, '_')}\nFROM data\nGROUP BY ${q(cat)}\nORDER BY 2 DESC`.replace('ORDER BY 2 DESC', `ORDER BY avg_${nm.key.replace(/\W+/g, '_')} DESC`)]);
+  if (nm) ex.push([`Top ${nm.name}`, `SELECT *\nFROM data\nORDER BY ${q(nm)} DESC\nLIMIT 10`]);
+  return ex;
+}
+function renderQuery(){
+  const ex = exampleQueries();
+  if (!state.query) state.query = ex[Math.min(1, ex.length - 1)][1];
+  $('#view').innerHTML = `
+    <header class="vhead"><div><span class="eyebrow">Query engine</span><h1>SQL</h1>
+      <p>Your dataset is the table <span class="mono">data</span>. Supports WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, DISTINCT, CASE, LIKE, IN, BETWEEN, aggregates and date functions.</p></div></header>
+    <div class="examples">${ex.map((e, i) => `<button type="button" data-i="${i}">${esc(e[0])}</button>`).join('')}</div>
+    <div class="card editor">
+      <textarea id="sql" spellcheck="false" aria-label="SQL query">${esc(state.query)}</textarea>
+      <div class="ebar"><span class="muted" style="font-size:12.5px"><span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> to run · columns: ${state.ds.cols.slice(0, 8).map(c => `<span class="mono">${esc(c.name)}</span>`).join(', ')}${state.ds.cols.length > 8 ? '…' : ''}</span>
+        <div style="display:flex;gap:8px"><button class="btn" id="copyRes" type="button">Copy as CSV</button><button class="btn primary" id="run" type="button">Run query</button></div></div>
+    </div>
+    <div id="qout"></div>`;
+  const ta = $('#sql');
+  $$('.examples button').forEach(b => b.addEventListener('click', () => { ta.value = ex[+b.dataset.i][1]; runQuery(); }));
+  ta.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); runQuery(); }
+    if (e.key === 'Tab'){ e.preventDefault(); const s = ta.selectionStart; ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 2; }
+  });
+  $('#run').addEventListener('click', runQuery);
+  $('#copyRes').addEventListener('click', async () => {
+    const r = state.qResult; if (!r){ toast('Run a query first'); return; }
+    const text = csv([r.heads.map(h => h.name), ...r.rows.map(row => row.map((v, i) => fmtVal(v, r.heads[i].col)))]);
+    try { await navigator.clipboard.writeText(text); toast(`Copied ${fmtInt(r.rows.length)} rows as CSV`); } catch(e){ toast('Clipboard access was blocked by the browser'); }
+  });
+  runQuery();
+}
+function runQuery(){
+  const src = $('#sql').value; state.query = src;
+  const out = $('#qout');
+  try {
+    const r = execSQL(src); state.qResult = r;
+    const shown = r.rows.slice(0, 500);
+    out.innerHTML = `
+      <div class="plan">${r.stages.map(([n, c, u]) => `<span class="st">${n} <b>${fmtInt(c)}</b>${u ? ' ' + u : ''}</span>`).join('<span class="arr">→</span>')}<span class="arr">·</span><span class="st"><b>${r.ms < 1 ? r.ms.toFixed(2) : r.ms.toFixed(1)}</b> ms</span></div>
+      ${r.rows.length ? `<div class="card"><div class="tbl" style="border:0">${tableHTML(r.heads, shown)}</div></div>${r.rows.length > 500 ? `<p class="muted" style="margin-top:8px">Showing 500 of ${fmtInt(r.rows.length)} rows. Copy as CSV to get all of them.</p>` : ''}` : '<div class="card empty" style="padding:28px;text-align:center;color:var(--ink-2)">The query ran but returned no rows.</div>'}
+      ${autoChart(r)}`;
+  } catch(e){
+    state.qResult = null;
+    if (!(e instanceof SQLError)) console.error(e);
+    const pos = e.pos ?? null;
+    let where = '';
+    if (pos !== null){ const before = src.slice(0, pos), line = before.split('\n').length, colN = pos - before.lastIndexOf('\n'); const L = src.split('\n')[line - 1]; where = `\n\nLine ${line}:  ${L}\n${' '.repeat(String(line).length + 8 + colN - 1)}^`; }
+    out.innerHTML = `<div class="qerr"><b>${esc(e instanceof SQLError ? e.message : 'Something went wrong running this query: ' + e.message)}</b>${esc(where)}</div>`;
+  }
+}
+function autoChart(r){
+  if (r.rows.length < 2 || r.rows.length > 40 || r.heads.length < 2 || !r.stages.some(s => s[0] === 'Group')) return '';
+  const li = r.heads.findIndex((h, i) => r.rows.every(row => typeof row[i] === 'string' || typeof row[i] === 'number'));
+  const vi = r.heads.findIndex((h, i) => i !== li && r.rows.every(row => typeof row[i] === 'number' || row[i] === null) && !(h.col && h.col.type === 'date'));
+  if (li < 0 || vi < 0) return '';
+  const labels = r.rows.map(row => fmtVal(row[li], r.heads[li].col)), vals = r.rows.map(row => row[vi] ?? 0);
+  return `<div class="card panel" style="margin-top:16px"><h2>${esc(r.heads[vi].name)} by ${esc(r.heads[li].name)}</h2><p class="hint">Drawn automatically from the result.</p>${barChart(labels, vals, { yLabel: r.heads[vi].name })}</div>`;
+}
+
+/* ================= CHART PRIMITIVES ================= */
+function niceTicks(min, max, count = 5){
+  if (min === max){ min -= 1; max += 1; }
+  const span = max - min, step0 = Math.pow(10, Math.floor(Math.log10(span / count))), err = span / count / step0;
+  const step = step0 * (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1);
+  const lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step, out = [];
+  for (let v = lo; v <= hi + step / 2; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+const shortNum = v => { const a = Math.abs(v); return a >= 1e9 ? (v / 1e9).toFixed(1).replace(/\.0$/, '') + 'B' : a >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : a >= 1e4 ? (v / 1e3).toFixed(0) + 'k' : fmtNum(v); };
+function frame(W, H, L, R, T, B, yt, y, yLabel){
+  let s = '';
+  yt.forEach(v => { s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 3.5}" text-anchor="end">${shortNum(v)}</text>`; });
+  if (yLabel) s += `<text x="${L}" y="${T - 6}" class="lbl">${esc(yLabel)}</text>`;
+  return s;
+}
+function barChart(labels, vals, o = {}){
+  const n = labels.length, W = 760, H = 320, maxLab = Math.max(...labels.map(l => String(l).length)), rot = n > 8 || maxLab * n * 6.5 > 640;
+  const L = 58, R = 12, T = 22, B = rot ? Math.min(110, 20 + maxLab * 5.6) : 30;
+  const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), yt = niceTicks(lo, hi), y0 = yt[0], y1 = yt[yt.length - 1];
+  const y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B), bw = (W - L - R) / n;
+  let s = frame(W, H, L, R, T, B, yt, y, o.yLabel);
+  labels.forEach((l, i) => {
+    const v = vals[i], x = L + i * bw + bw * .14, w = bw * .72, top = y(Math.max(0, v)), h = Math.abs(y(v) - y(0));
+    s += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, h).toFixed(1)}" rx="${Math.min(5, w / 4).toFixed(1)}" style="fill:${v < 0 ? 'var(--neg)' : 'var(--c1)'}"><title>${esc(l)}: ${fmtNum(v)}</title></rect>`;
+    const sl = String(l).length > 22 ? String(l).slice(0, 21) + '…' : l;
+    s += rot ? `<text transform="translate(${(x + w / 2 + 3).toFixed(1)},${H - B + 12}) rotate(-40)" text-anchor="end" class="lbl">${esc(sl)}</text>` : `<text x="${(x + w / 2).toFixed(1)}" y="${H - B + 16}" text-anchor="middle" class="lbl">${esc(sl)}</text>`;
+    if (n <= 14) s += `<text x="${(x + w / 2).toFixed(1)}" y="${(v >= 0 ? top - 5 : top + h + 12).toFixed(1)}" text-anchor="middle">${shortNum(v)}</text>`;
+  });
+  s += `<line class="axis" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}"/>`;
+  return `<div class="scroll-x"><svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:${Math.min(760, Math.max(360, n * 26))}px" role="img">${s}</svg></div>`;
+}
+function lineChart(pts, o = {}){
+  const W = 760, H = 320, L = 58, R = 16, T = 22, B = 34;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), yt = niceTicks(Math.min(0, ...ys), Math.max(...ys)), y0 = yt[0], y1 = yt[yt.length - 1];
+  const x = v => L + (x1 === x0 ? .5 : (v - x0) / (x1 - x0)) * (W - L - R), y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+  let s = frame(W, H, L, R, T, B, yt, y, o.yLabel);
+  const nt = Math.min(6, pts.length);
+  for (let i = 0; i < nt; i++){ const p = pts[Math.round(i * (pts.length - 1) / Math.max(1, nt - 1))]; s += `<text x="${x(p[0])}" y="${H - 12}" text-anchor="${i === 0 && nt > 1 ? 'start' : i === nt - 1 && nt > 1 ? 'end' : 'middle'}" class="lbl">${esc(o.fmtX ? o.fmtX(p[0]) : fmtNum(p[0]))}</text>`; }
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+  s += `<path d="${d} L${x(x1).toFixed(1)} ${y(Math.max(y0, 0))} L${x(x0).toFixed(1)} ${y(Math.max(y0, 0))} Z" style="fill:var(--c1);opacity:.1"/>`;
+  s += `<path d="${d}" style="fill:none;stroke:var(--c1);stroke-width:2.5;stroke-linejoin:round"/>`;
+  if (pts.length <= 60) pts.forEach(p => s += `<circle cx="${x(p[0]).toFixed(1)}" cy="${y(p[1]).toFixed(1)}" r="3.5" style="fill:var(--surface);stroke:var(--c1);stroke-width:2"><title>${esc(o.fmtX ? o.fmtX(p[0]) : p[0])}: ${fmtNum(p[1])}</title></circle>`);
+  return `<div class="scroll-x"><svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:420px" role="img">${s}</svg></div>`;
+}
+function scatterChart(pts, o = {}){
+  const W = 760, H = 380, L = 58, R = 16, T = 22, B = 40;
+  const xt = niceTicks(Math.min(...pts.map(p => p[0])), Math.max(...pts.map(p => p[0]))), yt = niceTicks(Math.min(...pts.map(p => p[1])), Math.max(...pts.map(p => p[1])));
+  const x = v => L + (v - xt[0]) / (xt[xt.length - 1] - xt[0]) * (W - L - R), y = v => T + (1 - (v - yt[0]) / (yt[yt.length - 1] - yt[0])) * (H - T - B);
+  let s = frame(W, H, L, R, T, B, yt, y, o.yLabel);
+  xt.forEach(v => s += `<line class="grid" x1="${x(v)}" x2="${x(v)}" y1="${T}" y2="${H - B}" stroke-dasharray="2 4"/><text x="${x(v)}" y="${H - B + 16}" text-anchor="middle">${shortNum(v)}</text>`);
+  if (o.xLabel) s += `<text x="${W - R}" y="${H - 4}" text-anchor="end" class="lbl">${esc(o.xLabel)}</text>`;
+  if (o.diag){ const a = Math.max(xt[0], yt[0]), b = Math.min(xt[xt.length - 1], yt[yt.length - 1]); s += `<line x1="${x(a)}" y1="${y(a)}" x2="${x(b)}" y2="${y(b)}" style="stroke:var(--ink-3);stroke-dasharray:5 4"/>`; }
+  pts.forEach(p => s += `<circle cx="${x(p[0]).toFixed(1)}" cy="${y(p[1]).toFixed(1)}" r="3.4" style="fill:${p[2] || 'var(--c1)'};opacity:.62"/>`);
+  if (o.fit){ const [a, b] = o.fit; const xa = xt[0], xb = xt[xt.length - 1]; s += `<line x1="${x(xa)}" y1="${y(a + b * xa)}" x2="${x(xb)}" y2="${y(a + b * xb)}" style="stroke:var(--ink);stroke-width:2;stroke-dasharray:6 4"/>`; }
+  return `<div class="scroll-x"><svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:420px" role="img">${s}</svg></div>`;
+}
+
+/* ================= CHARTS VIEW ================= */
+function renderCharts(){
+  const { ds, prof } = state;
+  const usable = ds.cols.map((c, i) => ({ c, p: prof.cols[i] })).filter(x => !x.p.isId && !(x.c.type === 'text'));
+  if (!state.chart){
+    const cat = usable.find(x => x.c.type === 'category' || x.c.type === 'boolean'), num = usable.find(x => isNumT(x.c.type));
+    const date = usable.find(x => x.c.type === 'date');
+    state.chart = { x: (cat || date || usable[0] || {}).c?.name || '', y: num?.c.name || '', agg: num ? 'avg' : 'count', color: '' };
+    if (state.sampleId === 'coffee') state.chart = { x: 'order_date', y: 'total_rwf', agg: 'sum', color: '' };
+    if (state.sampleId === 'heart') state.chart = { x: 'age', y: 'systolic_bp', agg: 'avg', color: 'risk' };
+    if (state.sampleId === 'students') state.chart = { x: 'study_hours_week', y: 'final_score', agg: 'avg', color: 'part_time_job' };
+  }
+  const C = state.chart;
+  const opt = (list, val, none) => (none ? `<option value="">${none}</option>` : '') + list.map(x => `<option value="${esc(x.c.name)}" ${x.c.name === val ? 'selected' : ''}>${esc(x.c.name)}</option>`).join('');
+  $('#view').innerHTML = `
+    <header class="vhead"><div><span class="eyebrow">Chart builder</span><h1>Charts</h1><p>Pick columns and Quarry chooses the chart: bars for categories, a line for dates, a scatter with a trend line for two numbers, a histogram for one.</p></div></header>
+    <div class="card panel">
+      <div class="ctrls">
+        <label class="field">X axis<select class="sel" id="cx">${opt(usable, C.x)}</select></label>
+        <label class="field">Y axis<select class="sel" id="cy">${opt(usable.filter(x => isNumT(x.c.type)), C.y, 'Row count')}</select></label>
+        <label class="field">Summarise by<select class="sel" id="ca">${[['avg','Average'],['sum','Sum'],['median','Median'],['min','Minimum'],['max','Maximum']].map(([v, l]) => `<option value="${v}" ${C.agg === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="field">Colour by<select class="sel" id="cc">${opt(usable.filter(x => (x.c.type === 'category' || x.c.type === 'boolean') && x.p.unique <= 6), C.color, 'None')}</select></label>
+        <div class="field" style="justify-content:flex-end"><button class="btn" id="cswap" type="button">Swap axes</button></div>
+      </div>
+      <div id="chartOut"></div>
+    </div>`;
+  const draw = () => { C.x = $('#cx').value; C.y = $('#cy').value; C.agg = $('#ca').value; C.color = $('#cc').value; $('#chartOut').innerHTML = buildChart(C); };
+  ['cx','cy','ca','cc'].forEach(id => $('#' + id).addEventListener('change', draw));
+  $('#cswap').addEventListener('click', () => { const x = C.x; if (!C.y || !isNumT(state.colMap.get(x.toLowerCase())?.type)) { toast('Swap works when both axes are numeric'); return; } C.x = C.y; C.y = x; renderCharts(); });
+  draw();
+}
+function aggregate(vals, how){
+  if (!vals.length) return null;
+  if (how === 'sum') return vals.reduce((s, v) => s + v, 0);
+  if (how === 'min') return Math.min(...vals);
+  if (how === 'max') return Math.max(...vals);
+  if (how === 'median'){ const s = vals.slice().sort((a, b) => a - b), m = (s.length - 1) / 2; return (s[Math.floor(m)] + s[Math.ceil(m)]) / 2; }
+  return vals.reduce((s, v) => s + v, 0) / vals.length;
+}
+function buildChart(C){
+  const { ds } = state, X = state.colMap.get(C.x.toLowerCase()), Y = C.y ? state.colMap.get(C.y.toLowerCase()) : null, n = ds.n;
+  if (!X) return '<p class="muted">Choose a column for the X axis.</p>';
+  const aggName = { avg:'Average', sum:'Total', median:'Median', min:'Minimum', max:'Maximum' }[C.agg];
+  const yLabel = Y ? `${aggName} ${Y.name}` : 'Rows';
+  if (X.type === 'category' || X.type === 'boolean'){
+    const g = new Map();
+    for (let i = 0; i < n; i++){ const k = X.values[i] ?? '(missing)'; if (!g.has(k)) g.set(k, []); if (Y){ if (Y.values[i] !== null) g.get(k).push(Y.values[i]); } else g.get(k).push(1); }
+    let rows = [...g].map(([k, v]) => [k, Y ? aggregate(v, C.agg) : v.length]).filter(r => r[1] !== null).sort((a, b) => b[1] - a[1]);
+    const total = rows.length; rows = rows.slice(0, 24);
+    return `<p class="caption">${esc(yLabel)} for each <b>${esc(X.name)}</b>${total > 24 ? `, top 24 of ${total}` : ''}.</p>` + barChart(rows.map(r => r[0]), rows.map(r => r[1]), { yLabel });
+  }
+  if (X.type === 'date'){
+    const p = state.prof.cols[ds.cols.indexOf(X)], spanDays = (p.max - p.min) / 864e5;
+    const unit = spanDays > 400 ? 'month' : spanDays > 120 ? 'week' : 'day';
+    const keyOf = ms => { const d = new Date(ms); if (unit === 'month') return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1); if (unit === 'week'){ const w = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); return w - ((d.getUTCDay() + 6) % 7) * 864e5; } return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
+    const g = new Map();
+    for (let i = 0; i < n; i++){ if (X.values[i] === null) continue; const k = keyOf(X.values[i]); if (!g.has(k)) g.set(k, []); if (Y){ if (Y.values[i] !== null) g.get(k).push(Y.values[i]); } else g.get(k).push(1); }
+    const pts = [...g].map(([k, v]) => [k, Y ? aggregate(v, C.agg) : v.length]).filter(r => r[1] !== null).sort((a, b) => a[0] - b[0]);
+    const fx = unit === 'month' ? (ms => new Date(ms).toLocaleDateString('en-GB', { month:'short', year:'2-digit', timeZone:'UTC' })) : (ms => new Date(ms).toLocaleDateString('en-GB', { day:'numeric', month:'short', timeZone:'UTC' }));
+    return `<p class="caption">${esc(yLabel)} per ${unit} of <b>${esc(X.name)}</b>.</p>` + lineChart(pts, { yLabel, fmtX: fx });
+  }
+  if (isNumT(X.type) && !Y){
+    const p = state.prof.cols[ds.cols.indexOf(X)];
+    const labels = p.hist.map((_, i) => fmtNum(p.min + i * p.histStep));
+    return `<p class="caption">Distribution of <b>${esc(X.name)}</b> (${p.hist.length} bins). Pick a Y column to compare two numbers.</p>` + barChart(labels, p.hist, { yLabel: 'Rows' });
+  }
+  if (isNumT(X.type) && Y){
+    const Cc = C.color ? state.colMap.get(C.color.toLowerCase()) : null;
+    const levels = Cc ? [...new Set(Cc.values.filter(v => v !== null))].slice(0, 6) : [];
+    const colorOf = v => Cc ? `var(--c${levels.indexOf(v) + 1})` : null;
+    let idx = []; for (let i = 0; i < n; i++) if (X.values[i] !== null && Y.values[i] !== null) idx.push(i);
+    const total = idx.length; if (idx.length > 2500){ const r = rng(5); idx = idx.filter(() => r() < 2500 / total); }
+    let sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0; const m = total;
+    for (let i = 0; i < n; i++){ const a = X.values[i], b = Y.values[i]; if (a === null || b === null) continue; sx += a; sy += b; sxx += a * a; sxy += a * b; syy += b * b; }
+    const slope = (sxy - sx * sy / m) / (sxx - sx * sx / m), icpt = (sy - slope * sx) / m, rr = (sxy - sx * sy / m) / Math.sqrt((sxx - sx * sx / m) * (syy - sy * sy / m));
+    const pts = idx.map(i => [X.values[i], Y.values[i], colorOf(Cc ? Cc.values[i] : null)]);
+    return `<p class="caption"><b>${esc(Y.name)}</b> against <b>${esc(X.name)}</b>: ${fmtInt(total)} points${total > 2500 ? ', 2,500 sampled for drawing' : ''}. Trend line slope ${fmtNum(slope)}, r = ${isFinite(rr) ? rr.toFixed(2) : 'n/a'}.</p>`
+      + scatterChart(pts, { yLabel: Y.name, xLabel: X.name, fit: isFinite(slope) ? [icpt, slope] : null })
+      + (Cc ? `<div class="legend">${levels.map((l, i) => `<span><i style="background:var(--c${i + 1})"></i>${esc(Cc.name)} = ${esc(l)}</span>`).join('')}</div>` : '');
+  }
+  return '<p class="muted">This column type cannot be charted on the X axis.</p>';
+}
+
+/* ================= PREDICT (from-scratch ML) ================= */
+function modelCandidates(){
+  const { ds, prof } = state;
+  return ds.cols.map((c, i) => ({ c, p: prof.cols[i] })).filter(x => !x.p.isId && x.c.type !== 'text' && x.c.type !== 'date' && x.p.unique >= 2);
+}
+function renderPredict(){
+  const cands = modelCandidates();
+  if (!cands.length){ $('#view').innerHTML = `<header class="vhead"><div><h1>Predict</h1></div></header><div class="card panel"><p class="muted">This dataset has no columns that can be predicted. Quarry needs numeric or categorical columns.</p></div>`; return; }
+  if (!state.pcfg){ state.pcfg = {}; }
+  const key = state.ds.name + state.ds.n;
+  if (state.pcfg.key !== key){
+    const tgt = cands.slice().reverse().find(x => (x.c.type === 'category' || x.c.type === 'boolean') && x.p.unique <= 10) || cands[cands.length - 1];
+    let target = state.sampleId === 'students' ? 'final_score' : state.sampleId === 'coffee' ? 'product' : tgt.c.name;
+    state.pcfg = { key, target, feats: null };
+  }
+  const P = state.pcfg;
+  const targetCol = state.colMap.get(P.target.toLowerCase());
+  const tp = state.prof.cols[state.ds.cols.indexOf(targetCol)];
+  const task = isNumT(targetCol.type) && tp.unique > 10 ? 'regression' : 'classification';
+  const featOpts = cands.filter(x => x.c.name !== P.target && !(x.c.type === 'category' && x.p.unique > 30));
+  if (!P.feats) P.feats = featOpts.filter(x => !(state.sampleId === 'coffee' && ['total_rwf','unit_price_rwf'].includes(x.c.name))).map(x => x.c.name);
+  P.feats = P.feats.filter(f => featOpts.some(x => x.c.name === f));
+  $('#view').innerHTML = `
+    <header class="vhead"><div><span class="eyebrow">Machine learning, from scratch</span><h1>Predict</h1>
+      <p>Pick a column to predict. Quarry encodes the features, splits the rows 80/20, trains with gradient descent (Adam) and scores the model on rows it never saw.</p></div></header>
+    <div class="card panel" style="margin-bottom:18px">
+      <div class="psetup">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <label class="field">Column to predict<select class="sel" id="ptarget">${cands.map(x => `<option ${x.c.name === P.target ? 'selected' : ''}>${esc(x.c.name)}</option>`).join('')}</select></label>
+          <div><span class="task">${task === 'regression' ? 'Regression · linear model' : `Classification · ${tp.unique} classes · softmax`}</span></div>
+          <button class="btn primary" id="train" type="button">Train model</button>
+          <span class="epoch" id="epoch"></span>
+        </div>
+        <div style="min-width:0"><div class="field" style="margin-bottom:8px">Features used (${P.feats.length} of ${featOpts.length})</div>
+          <div class="feats">${featOpts.map(x => `<label><input type="checkbox" value="${esc(x.c.name)}" ${P.feats.includes(x.c.name) ? 'checked' : ''}>${esc(x.c.name)} <span class="type ${x.c.type}" style="padding:2px 5px;font-size:9.5px">${x.c.type === 'integer' || x.c.type === 'number' ? 'num' : x.c.type === 'boolean' ? 'bool' : 'cat'}</span></label>`).join('')}</div>
+        </div>
+      </div>
+    </div>
+    <div id="pout"></div>`;
+  $('#ptarget').addEventListener('change', e => { P.target = e.target.value; P.feats = null; state.model = null; renderPredict(); });
+  $$('.feats input').forEach(cb => cb.addEventListener('change', () => { P.feats = $$('.feats input').filter(x => x.checked).map(x => x.value); $('.psetup .field').textContent = `Features used (${P.feats.length} of ${featOpts.length})`; }));
+  $('#train').addEventListener('click', () => train(task));
+  if (state.model && state.model.target === P.target) showModel(state.model); else train(task);
+}
+function buildMatrix(task){
+  const { ds } = state, P = state.pcfg, T = state.colMap.get(P.target.toLowerCase());
+  const feats = P.feats.map(f => state.colMap.get(f.toLowerCase()));
+  const rows = []; for (let i = 0; i < ds.n; i++) if (T.values[i] !== null) rows.push(i);
+  const enc = feats.map(c => {
+    if (isNumT(c.type)){
+      const v = rows.map(i => c.values[i]).filter(x => x !== null).sort((a, b) => a - b);
+      const med = v.length ? v[Math.floor(v.length / 2)] : 0, mean = v.reduce((s, x) => s + x, 0) / (v.length || 1);
+      const sd = Math.sqrt(v.reduce((s, x) => s + (x - mean) ** 2, 0) / (v.length || 1)) || 1;
+      return { c, kind: 'num', med, mean, sd, dims: 1, min: v[0], max: v[v.length - 1] };
+    }
+    const counts = new Map(); rows.forEach(i => { const v = c.values[i]; if (v !== null) counts.set(v, (counts.get(v) || 0) + 1); });
+    const levels = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 12).map(x => x[0]);
+    return { c, kind: 'cat', levels, dims: levels.length, mode: levels[0] };
+  });
+  const D = enc.reduce((s, e) => s + e.dims, 0);
+  const encode = get => { const x = new Float64Array(D + 1); let o = 0; enc.forEach((e, fi) => { const v = get(e.c, fi); if (e.kind === 'num'){ x[o] = ((v === null ? e.med : v) - e.mean) / e.sd; o++; } else { const li = e.levels.indexOf(v); if (li >= 0) x[o + li] = 1; o += e.dims; } }); x[D] = 1; return x; };
+  const X = rows.map(i => encode(c => c.values[i]));
+  let classes = null, Y, ymean = 0, ysd = 1;
+  if (task === 'classification'){
+    const cnt = new Map(); rows.forEach(i => cnt.set(T.values[i], (cnt.get(T.values[i]) || 0) + 1));
+    classes = [...cnt].sort((a, b) => b[1] - a[1]).map(x => x[0]);
+    if (classes.length > 12) throw new Error(`"${T.name}" has ${classes.length} distinct values. Pick a column with 12 or fewer to classify.`);
+    Y = rows.map(i => classes.indexOf(T.values[i]));
+  } else {
+    const v = rows.map(i => T.values[i]); ymean = v.reduce((s, x) => s + x, 0) / v.length; ysd = Math.sqrt(v.reduce((s, x) => s + (x - ymean) ** 2, 0) / v.length) || 1;
+    Y = v.map(x => (x - ymean) / ysd);
+  }
+  const r = rng(42), order = rows.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  const cut = Math.floor(order.length * .8);
+  return { enc, D, encode, X, Y, classes, ymean, ysd, trainIdx: order.slice(0, cut), testIdx: order.slice(cut), target: T };
+}
+function train(task){
+  const out = $('#pout'), P = state.pcfg;
+  if (!P.feats.length){ out.innerHTML = '<div class="card panel"><p class="muted">Select at least one feature to train on.</p></div>'; return; }
+  let M;
+  try { M = buildMatrix(task); } catch(e){ out.innerHTML = `<div class="qerr"><b>${esc(e.message)}</b></div>`; return; }
+  const K = task === 'classification' ? M.classes.length : 1, D1 = M.D + 1;
+  const W = Array.from({ length: K }, () => new Float64Array(D1)), mW = W.map(() => new Float64Array(D1)), vW = W.map(() => new Float64Array(D1));
+  const lr = .05, b1 = .9, b2 = .999, eps = 1e-8, l2 = 1e-3, EPOCHS = 300, PER_FRAME = 6;
+  const losses = [], tr = M.trainIdx, N = tr.length;
+  const forward = x => { if (K === 1){ let s = 0; for (let d = 0; d < D1; d++) s += W[0][d] * x[d]; return [s]; } const z = W.map(w => { let s = 0; for (let d = 0; d < D1; d++) s += w[d] * x[d]; return s; }); const mx = Math.max(...z); const e = z.map(v => Math.exp(v - mx)); const se = e.reduce((a, b) => a + b, 0); return e.map(v => v / se); };
+  let epoch = 0, t = 0;
+  out.innerHTML = `<div class="grid2"><div class="card panel"><h2>Training</h2><p class="hint">${task === 'classification' ? 'Cross-entropy' : 'Mean squared error'} on the ${fmtInt(N)} training rows, ${EPOCHS} epochs.</p><div id="lossC"></div></div><div class="card panel" id="mpanel"><h2>Results</h2><p class="hint">Appear when training finishes.</p><div class="loading"><span class="spin"></span>Training…</div></div></div>`;
+  $('#train').disabled = true;
+  const step = () => {
+    for (let s = 0; s < PER_FRAME && epoch < EPOCHS; s++, epoch++){
+      const G = W.map(() => new Float64Array(D1)); let loss = 0;
+      for (const i of tr){
+        const x = M.X[i], p = forward(x);
+        if (K === 1){ const err = p[0] - M.Y[i]; loss += err * err; for (let d = 0; d < D1; d++) G[0][d] += 2 * err * x[d]; }
+        else { loss -= Math.log(Math.max(1e-12, p[M.Y[i]])); for (let k = 0; k < K; k++){ const g = p[k] - (k === M.Y[i] ? 1 : 0); if (g) for (let d = 0; d < D1; d++) G[k][d] += g * x[d]; } }
+      }
+      t++;
+      for (let k = 0; k < K; k++) for (let d = 0; d < D1; d++){
+        const g = G[k][d] / N + (d < M.D ? l2 * W[k][d] : 0);
+        mW[k][d] = b1 * mW[k][d] + (1 - b1) * g; vW[k][d] = b2 * vW[k][d] + (1 - b2) * g * g;
+        W[k][d] -= lr * (mW[k][d] / (1 - b1 ** t)) / (Math.sqrt(vW[k][d] / (1 - b2 ** t)) + eps);
+      }
+      losses.push(loss / N);
+    }
+    const lc = $('#lossC'); if (!lc){ state.trainTimer = null; return; }
+    lc.innerHTML = lineChart(losses.map((l, i) => [i + 1, l]), { yLabel: 'Loss', fmtX: v => 'epoch ' + v });
+    const ep = $('#epoch'); if (ep) ep.textContent = `Epoch ${epoch} of ${EPOCHS} · loss ${losses[losses.length - 1].toFixed(4)}`;
+    if (epoch < EPOCHS) state.trainTimer = requestAnimationFrame(step);
+    else { state.trainTimer = null; $('#train').disabled = false; state.model = finish(M, W, forward, task, losses); showModel(state.model, true); }
+  };
+  state.trainTimer = requestAnimationFrame(step);
+}
+function finish(M, W, forward, task, losses){
+  const te = M.testIdx, model = { task, target: M.target.name, M, W, forward, losses };
+  if (task === 'classification'){
+    const K = M.classes.length, cm = Array.from({ length: K }, () => Array(K).fill(0));
+    const scores = [];
+    te.forEach(i => { const p = forward(M.X[i]); const pred = p.indexOf(Math.max(...p)); cm[M.Y[i]][pred]++; scores.push([p[1] ?? 0, M.Y[i] === 1 ? 1 : 0]); });
+    const acc = cm.reduce((s, r, i) => s + r[i], 0) / te.length;
+    const base = Math.max(...M.classes.map((_, k) => te.filter(i => M.Y[i] === k).length)) / te.length;
+    let auc = null;
+    if (K === 2){ const pos = scores.filter(s => s[1]), neg = scores.filter(s => !s[1]); if (pos.length && neg.length){ let w = 0; const sorted = scores.slice().sort((a, b) => a[0] - b[0]); let rank = 0, rsum = 0; for (let i = 0; i < sorted.length;){ let j = i; while (j < sorted.length && sorted[j][0] === sorted[i][0]) j++; const avgR = (i + j + 1) / 2; for (let q = i; q < j; q++) if (sorted[q][1]) rsum += avgR; i = j; } auc = (rsum - pos.length * (pos.length + 1) / 2) / (pos.length * neg.length); } }
+    const f1s = M.classes.map((_, k) => { const tp = cm[k][k], fp = cm.reduce((s, r, i) => s + (i !== k ? r[k] : 0), 0), fn = cm[k].reduce((s, v, j) => s + (j !== k ? v : 0), 0); const pr = tp + fp ? tp / (tp + fp) : 0, rc = tp + fn ? tp / (tp + fn) : 0; return pr + rc ? 2 * pr * rc / (pr + rc) : 0; });
+    Object.assign(model, { cm, acc, base, auc, macroF1: f1s.reduce((s, v) => s + v, 0) / K });
+  } else {
+    const pairs = te.map(i => [M.Y[i] * M.ysd + M.ymean, forward(M.X[i])[0] * M.ysd + M.ymean]);
+    const mean = pairs.reduce((s, p) => s + p[0], 0) / pairs.length;
+    const ssr = pairs.reduce((s, p) => s + (p[0] - p[1]) ** 2, 0), sst = pairs.reduce((s, p) => s + (p[0] - mean) ** 2, 0);
+    const trainMean = M.trainIdx.reduce((s, i) => s + M.Y[i], 0) / M.trainIdx.length * M.ysd + M.ymean;
+    Object.assign(model, { pairs, r2: 1 - ssr / sst, mae: pairs.reduce((s, p) => s + Math.abs(p[0] - p[1]), 0) / pairs.length, rmse: Math.sqrt(ssr / pairs.length), baseMae: pairs.reduce((s, p) => s + Math.abs(p[0] - trainMean), 0) / pairs.length });
+  }
+  let o = 0; const imp = M.enc.map(e => { let s = 0; for (let d = o; d < o + e.dims; d++) for (const w of W) s += Math.abs(w[d]); o += e.dims; return [e.c.name, s / (e.kind === 'cat' ? Math.sqrt(e.dims) : 1)]; });
+  const tot = imp.reduce((s, x) => s + x[1], 0) || 1;
+  model.importance = imp.map(([n, v]) => [n, v / tot]).sort((a, b) => b[1] - a[1]);
+  return model;
+}
+function showModel(m, fresh){
+  const out = $('#pout'); if (!out) return;
+  const M = m.M, pct = v => (v * 100).toFixed(1) + '%';
+  let metrics, detail;
+  if (m.task === 'classification'){
+    metrics = `<div class="metric"><span>Accuracy</span><b>${pct(m.acc)}</b><small>on ${fmtInt(M.testIdx.length)} test rows</small></div>
+      <div class="metric"><span>Baseline</span><b>${pct(m.base)}</b><small>always guessing the most common class</small></div>
+      <div class="metric"><span>${m.auc !== null ? 'ROC AUC' : 'Macro F1'}</span><b>${m.auc !== null ? m.auc.toFixed(3) : m.macroF1.toFixed(3)}</b><small>${m.auc !== null ? `ranking quality for "${esc(M.classes[1])}"` : 'balanced across classes'}</small></div>
+      <div class="metric"><span>Lift</span><b style="color:${m.acc > m.base ? 'var(--pos)' : 'var(--neg)'}">${m.acc >= m.base ? '+' : '−'}${Math.abs((m.acc - m.base) * 100).toFixed(1)} pts</b><small>over the baseline</small></div>`;
+    const K = M.classes.length, mx = Math.max(...m.cm.flat(), 1);
+    detail = `<h2 style="font-size:15px;margin:4px 0 10px">Confusion matrix</h2><div class="scroll-x"><table class="cm"><tr><th></th>${M.classes.map(c => `<th>pred. ${esc(c)}</th>`).join('')}</tr>${m.cm.map((r, i) => `<tr><th style="text-align:right">actual ${esc(M.classes[i])}</th>${r.map((v, j) => `<td style="background:color-mix(in srgb, ${i === j ? 'var(--pos)' : 'var(--neg)'} ${Math.round(v / mx * 70 + (v ? 8 : 0))}%, var(--sunk));color:${v / mx > .55 ? 'var(--surface)' : 'var(--ink)'}">${v}</td>`).join('')}</tr>`).join('')}</table></div>`;
+  } else {
+    metrics = `<div class="metric"><span>R²</span><b>${m.r2.toFixed(3)}</b><small>share of variance explained</small></div>
+      <div class="metric"><span>MAE</span><b>${fmtNum(m.mae)}</b><small>average miss, in ${esc(m.target)} units</small></div>
+      <div class="metric"><span>RMSE</span><b>${fmtNum(m.rmse)}</b><small>penalises big misses</small></div>
+      <div class="metric"><span>Baseline MAE</span><b>${fmtNum(m.baseMae)}</b><small>always predicting the mean</small></div>`;
+    detail = `<h2 style="font-size:15px;margin:4px 0 10px">Predicted vs actual</h2>${scatterChart(m.pairs.map(p => [p[0], p[1]]), { xLabel: 'actual', yLabel: 'predicted', diag: true })}`;
+  }
+  out.innerHTML = `
+    <div class="grid2">
+      <div class="card panel"><h2>Training</h2><p class="hint">Loss fell from ${m.losses[0].toFixed(3)} to ${m.losses[m.losses.length - 1].toFixed(3)} over ${m.losses.length} epochs.</p>${lineChart(m.losses.map((l, i) => [i + 1, l]), { yLabel: 'Loss', fmtX: v => 'epoch ' + v })}</div>
+      <div class="card panel"><h2>Results on unseen rows</h2><p class="hint">Scored on the 20% of rows held out from training.</p><div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))">${metrics}</div>${detail}</div>
+    </div>
+    <div class="grid2">
+      <div class="card panel"><h2>Try a prediction</h2><p class="hint">Change the inputs and the model answers instantly.</p><div class="whatif" id="whatif">${M.enc.map((e, i) => e.kind === 'num'
+        ? `<label class="field">${esc(e.c.name)}<input class="inp" type="number" step="any" data-i="${i}" value="${+(+e.med).toFixed(2)}"></label>`
+        : `<label class="field">${esc(e.c.name)}<select class="sel" data-i="${i}">${e.levels.map(l => `<option ${l === e.mode ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`).join('')}</div><div id="predOut"></div></div>
+      <div class="card panel"><h2>What drives the prediction</h2><p class="hint">Share of the model's weight on each feature (standardised).</p><div class="imp">${m.importance.map(([n, v]) => `<div class="r"><span title="${esc(n)}">${esc(n)}</span><span class="track"><i style="width:${(v / m.importance[0][1] * 100).toFixed(1)}%"></i></span><span class="mono" style="font-size:12px;color:var(--ink-3);text-align:right">${(v * 100).toFixed(0)}%</span></div>`).join('')}</div></div>
+    </div>`;
+  const ep = $('#epoch'); if (ep) ep.textContent = `Trained ${m.losses.length} epochs on ${fmtInt(M.trainIdx.length)} rows`;
+  const predict = () => {
+    const vals = {}; $$('#whatif [data-i]').forEach(el => { const e = M.enc[+el.dataset.i]; vals[+el.dataset.i] = e.kind === 'num' ? (el.value === '' ? null : +el.value) : el.value; });
+    const x = M.encode((c, fi) => vals[fi] ?? null), p = m.forward(x);
+    if (m.task === 'regression'){ $('#predOut').innerHTML = `<span class="eyebrow">Predicted ${esc(m.target)}</span><div class="bigpred num">${fmtNum(p[0] * M.ysd + M.ymean)}</div><p class="muted">Typical error on unseen rows: ± ${fmtNum(m.mae)}</p>`; return; }
+    const best = p.indexOf(Math.max(...p));
+    $('#predOut').innerHTML = `<span class="eyebrow">Predicted ${esc(m.target)}</span><div class="bigpred" style="margin-bottom:12px">${esc(M.classes[best])}</div><div class="probs">${M.classes.map((c, k) => `<div class="r"><span>${esc(c)}</span><span class="track"><i style="width:${(p[k] * 100).toFixed(1)}%;background:${k === best ? 'var(--accent)' : 'var(--ink-3)'}"></i></span><span class="mono" style="text-align:right;font-size:13px">${(p[k] * 100).toFixed(1)}%</span></div>`).join('')}</div>`;
+  };
+  $$('#whatif [data-i]').forEach(el => el.addEventListener('input', predict));
+  predict();
+  if (fresh) toast(m.task === 'classification' ? `Model trained: ${(m.acc * 100).toFixed(1)}% accuracy on unseen rows` : `Model trained: R² ${m.r2.toFixed(2)} on unseen rows`);
+}
+
+/* ---------------- boot ---------------- */
+renderRail();
+const startSample = SAMPLES[ls.get('quarry.sample')] ? ls.get('quarry.sample') : 'heart';
+loadSample(startSample, true);
+})();
+</script>
+</body>
+</html>
